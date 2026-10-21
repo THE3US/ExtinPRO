@@ -1,0 +1,32 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block subtitulo %}Ventas · {{ v.folio }}{% endblock %}
+{% block titulo %}Venta {{ v.folio }}{% endblock %}
+{% block content %}
+<div class="split" style="grid-template-columns:minmax(0,1fr) 360px">
+  <div class="grid" style="gap:20px">
+    <section class="card"><div class="card-h"><div><h2>Partidas</h2><div class="hint">{{ v.sucursal.nombre }} · {{ v.fecha_venta|fecha_hora }} · caja {{ v.sesion_caja.caja.codigo }}</div></div>{% if v.estado == "CANCELADA" %}{% pill "crit" "Cancelada" %}{% else %}{% pill "ok" "Completada" %}{% endif %}</div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Producto</th><th class="r">Cant.</th><th class="r">Precio</th><th class="r">Descuento</th><th class="r">IVA</th><th class="r">Importe</th></tr></thead><tbody>
+      {% for d in detalles %}<tr><td>{% celda_producto d.producto %}</td><td class="r num">{{ d.cantidad|cantidad }}</td><td class="r num">{{ d.precio_unitario|dinero }}</td><td class="r num">{% if d.descuento %}−{{ d.descuento|dinero }}<div class="hint">{{ d.descuento_pct|cantidad }} %</div>{% else %}—{% endif %}</td><td class="r num">{{ d.iva|dinero }}</td><td class="r num"><b>{{ d.total|dinero }}</b></td></tr>{% endfor %}
+      </tbody><tfoot><tr><td colspan="5" class="r">Subtotal</td><td class="r num">{{ v.subtotal|dinero }}</td></tr><tr><td colspan="5" class="r">Descuento</td><td class="r num">−{{ v.descuento_total|dinero }}</td></tr><tr><td colspan="5" class="r">IVA</td><td class="r num">{{ v.iva_total|dinero }}</td></tr><tr><td colspan="5" class="r">Total</td><td class="r num">{{ v.total|dinero }}</td></tr></tfoot></table></div>
+    </section>
+    <section class="card"><div class="card-h"><h2>Pagos</h2></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Tipo</th><th>Método</th><th>Referencia</th><th>Caja</th><th class="r">Monto</th><th>Estado</th></tr></thead><tbody>
+      {% for p in pagos %}<tr><td>{{ p.fecha_pago|fecha_hora }}</td><td>{{ p.get_tipo_display }}</td><td>{{ p.get_metodo_display }}</td><td class="mono">{{ p.referencia|default:"—" }}</td><td>{{ p.sesion_caja.caja.codigo }}</td><td class="r num">{{ p.monto|dinero }}</td><td>{% if p.estado == "CANCELADO" %}{% pill "crit" "Cancelado" %}{% else %}{% pill "ok" "Confirmado" %}{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="7"><div class="empty">Sin pagos.</div></td></tr>{% endfor %}</tbody></table></div></section>
+    {% if v.estado == "CANCELADA" %}<div class="alert crit">{% icono 'x' %}<div><b>Venta cancelada por {{ v.cancelado_por.nombre_completo }}.</b><br>Motivo: {{ v.motivo_cancelacion }}</div></div>{% endif %}
+  </div>
+  <aside class="sticky grid" style="gap:16px">
+    <div style="background:var(--bg);padding:14px;border-radius:10px">{% include "ventas/_ticket.html" %}</div>
+    <a class="btn navy" href="{% url 'ventas:ticket' v.pk %}?imprimir=1" target="_blank">{% icono 'print' %} Imprimir ticket</a>
+    {% if errores %}<div class="alert crit">{% icono 'alert' %}<div>{% for e in errores %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div></div>{% endif %}
+    {% if v.estado == "COMPLETADA" and user.rol.puede_cancelar_venta %}
+    <form method="post" class="card"><div class="card-b grid" style="gap:12px">{% csrf_token %}
+      <h3 style="font-size:15px">Cancelar venta</h3>
+      <p class="hint">Se regresan las existencias con un movimiento de reversa y se anula o devuelve el pago. Nada se borra.</p>
+      <div class="field"><label for="mot">Motivo <span class="req">*</span></label><textarea class="txt" id="mot" name="motivo" minlength="10" required placeholder="Mínimo 10 caracteres">{{ request.POST.motivo }}</textarea></div>
+      <button class="btn danger-text" type="submit" data-confirmar="La venta <b>{{ v.folio }}</b> quedará cancelada y se revertirá el inventario." data-confirmar-titulo="Cancelar venta" data-confirmar-ok="Cancelar venta">{% icono 'x' %} Cancelar venta</button>
+    </div></form>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

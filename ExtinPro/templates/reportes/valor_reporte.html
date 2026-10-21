@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load spvci %}
+{% block title %}{{ archivo }}{% endblock %}
+{% block body %}
+<div class="print-page">
+  <div class="doc-actions no-print"><a class="btn" href="{% url 'reportes:valor' %}?{{ request.GET.urlencode }}">Cerrar</a><a class="btn" href="{% url 'reportes:valor' %}?{{ request.GET.urlencode }}&formato=xlsx">{% icono 'sheet' %} Exportar Excel</a><button class="btn navy" type="button" onclick="window.print()">{% icono 'download' %} Exportar PDF</button></div>
+  <div class="doc">
+    {% include "parciales/doc_head.html" with titulo="VALOR DE INVENTARIO" folio=folio_reporte %}
+    <div class="hint" style="text-align:right;margin-top:4px">Generado {{ generado|fecha_hora }} por {{ user.nombre_completo }}</div>
+    <div class="doc-meta"><div><span>Fecha de corte</span><b>{{ f.corte|fecha }}</b></div><div><span>Almacén</span><b>{{ nombre_alm }}</b></div><div><span>Categoría</span><b>{{ f.cat|default:"Todas" }}</b></div>
+      <div><span>Valor total</span><b>{{ res.total|dinero }}</b></div><div><span>Unidades</span><b>{{ res.unidades|cantidad }}</b></div><div><span>Método</span><b>Costo de referencia</b></div></div>
+    <h4 style="font-size:13px;margin:14px 0 6px">Resumen por categoría</h4>
+    <table class="tbl"><thead><tr><th>Categoría</th><th class="r">Unidades</th><th class="r">Valor</th><th class="r">%</th></tr></thead><tbody>{% for c in cats %}<tr><td>{{ c.categoria }}</td><td class="r num">{{ c.unidades|cantidad }}</td><td class="r num">{{ c.valor|dinero }}</td><td class="r num">{{ c.pct|floatformat:1 }} %</td></tr>{% endfor %}</tbody></table>
+    <h4 style="font-size:13px;margin:14px 0 6px">Detalle por producto</h4>
+    <table class="tbl"><thead><tr><th>SKU</th><th>Producto</th><th class="r">Unid.</th><th class="r">Costo</th><th class="r">Valor</th></tr></thead><tbody>{% for x in filas %}{% if x.unidades %}<tr><td class="mono">{{ x.producto.sku }}</td><td>{{ x.producto.nombre }}</td><td class="r num">{{ x.unidades|cantidad }}</td><td class="r num">{{ x.producto.precio_compra|dinero }}</td><td class="r num">{{ x.valor|dinero }}</td></tr>{% endif %}{% endfor %}</tbody>
+    <tfoot><tr><td colspan="2">Total</td><td class="r num">{{ res.unidades|cantidad }}</td><td></td><td class="r num">{{ res.total|dinero }}</td></tr></tfoot></table>
+    <div class="doc-foot"><span>Valores sin IVA. Existencias al corte calculadas desde el kárdex (movimientos de inventario).</span><span>SPVCI · ExtinPro</span></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}{% if request.GET.imprimir %}<script>window.addEventListener("load", () => window.print());</script>{% endif %}{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<section class="card"><div class="card-h"><div><h2>Usuarios del sistema</h2><div class="hint">USUARIO · el rol habilita los módulos del menú; tras 3 intentos fallidos la cuenta se bloquea</div></div><a class="btn primary" href="{% url 'usuarios:nuevo' %}">{% icono 'plus' %} Nuevo usuario</a></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Sucursal asignada</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for u in usuarios %}<tr><td><div class="me"><span class="avatar">{{ u.iniciales }}</span><b style="color:var(--ink)">{{ u.nombre_completo }}</b></div></td><td class="mono">{{ u.nombre_usuario }}</td><td>{{ u.rol.nombre }}</td><td>{{ u.sucursal.nombre }}</td>
+<td>{% if not u.activo %}{% pill "off" "Inactivo" %}{% elif u.bloqueado %}{% pill "crit" "Bloqueado" %}{% elif u.intentos_fallidos %}{% pill "warn" "Con intentos fallidos" %}{% else %}{% pill "ok" "Activo" %}{% endif %}</td>
+<td class="r" style="white-space:nowrap">{% if u.bloqueado %}<form method="post" action="{% url 'usuarios:reactivar' u.pk %}" class="inline">{% csrf_token %}<button class="btn sm navy" type="submit">{% icono 'lock' %} Reactivar</button></form> {% endif %}<a class="btn sm" href="{% url 'usuarios:editar' u.pk %}">Editar</a></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

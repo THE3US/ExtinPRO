@@ -1,0 +1,39 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<div class="spread"><p class="muted">Hola, <b style="color:var(--ink)">{{ user.nombre_completo }}</b>. Esto es lo más importante de hoy en {{ sucursal_activa.nombre }}.</p>
+  <div class="row">
+    {% if "ventas" in modulos %}<a class="btn primary" href="{% url 'ventas:pos' %}">{% icono 'cart' %} Nueva venta</a>{% endif %}
+    {% if "recepcion" in modulos %}<a class="btn" href="{% url 'compras:recepcion' %}">{% icono 'truck' %} Recibir mercancía</a>{% endif %}
+    <a class="btn" href="{% url 'inventario:consulta' %}">{% icono 'search' %} Consultar inventario</a>
+    {% if "reporte_ventas" in modulos %}<a class="btn" href="{% url 'reportes:ventas' %}">{% icono 'chart' %} Reporte de ventas</a>{% endif %}
+  </div>
+</div>
+<div class="kpis">
+  <div class="card kpi"><div class="ico ok">{% icono 'dollar' %}</div><div><div class="lab">Ventas de hoy</div><div class="val">{{ total_hoy|dinero }}</div><div class="sub">{{ ventas_hoy }} {% if ventas_hoy == 1 %}venta registrada{% else %}ventas registradas{% endif %}</div></div></div>
+  <div class="card kpi"><div class="ico">{% icono 'box' %}</div><div><div class="lab">Valor de inventario</div><div class="val">{{ valor.total|dinero }}</div><div class="sub">A costo, {% if sucursales_usuario|length > 1 %}todos los almacenes{% else %}{{ sucursal_activa.nombre }}{% endif %}</div></div></div>
+  <div class="card kpi"><div class="ico red">{% icono 'alert' %}</div><div><div class="lab">Alertas de stock</div><div class="val" style="color:var(--crit)">{{ alertas_lista|length }}</div><div class="sub">{{ agotados }} agotados · {{ bajo_minimo }} bajo mínimo</div></div></div>
+  <div class="card kpi"><div class="ico warn">{% icono 'truck' %}</div><div><div class="lab">Órdenes por recibir</div><div class="val">{{ por_recibir|length }}</div><div class="sub">{% for o in por_recibir %}{{ o.folio }}{% if not forloop.last %}, {% endif %}{% empty %}Sin pendientes{% endfor %}</div></div></div>
+</div>
+<div class="split" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)">
+  <div class="card"><div class="card-h"><div><h2>Ventas de los últimos 14 días</h2><div class="hint">Total con IVA por día · hoy resaltado en rojo</div></div></div>
+    <div class="card-b">{{ puntos|json_script:"datos-ventas" }}<div data-grafica="col" data-fuente="datos-ventas"></div></div></div>
+  <div class="card"><div class="card-h"><h2>Alertas de stock mínimo</h2>{% if "abastecimiento" in modulos %}<a class="btn sm" href="{% url 'compras:abastecimiento' %}">Abastecer</a>{% endif %}</div>
+    <div class="tbl-wrap"><table class="tbl"><tbody>
+      {% for a in alertas_lista|slice:":6" %}<tr><td>{% with " · "|add:a.sucursal.corto as extra %}{% celda_producto a.producto extra %}{% endwith %}</td><td class="r num" style="white-space:nowrap"><b class="qty-low">{{ a.existencia|cantidad }}</b><span class="hint"> / mín. {{ a.producto.stock_minimo|cantidad }}</span><div style="margin-top:4px">{% pill a.estado.0 a.estado.1 %}</div></td></tr>
+      {% empty %}<tr><td><div class="empty">Sin alertas de stock.</div></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if alertas_lista|length > 6 %}<div class="pager"><span>{{ alertas_lista|length|add:"-6" }} alertas más</span><button class="btn sm ghost" data-abrir="modal-alertas">Ver todas</button></div>{% endif %}
+  </div>
+</div>
+<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+  <div class="card"><div class="card-h"><h2>Órdenes de compra por recibir</h2></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Folio</th><th>Proveedor</th><th>Entrega estimada</th><th>Estado</th><th></th></tr></thead><tbody>
+    {% for o in por_recibir %}<tr><td class="mono" style="white-space:nowrap">{{ o.folio }}</td><td>{{ o.proveedor.nombre_razon_social }}</td><td style="white-space:nowrap">{{ o.fecha_estimada|fecha }}</td><td style="white-space:nowrap">{% if o.estado == "PARCIAL" %}{% pill "warn" "Parcial" %}{% else %}{% pill "info" "Por recibir" %}{% endif %}</td><td class="r">{% if "recepcion" in modulos %}<a class="btn sm" href="{% url 'compras:recepcion' %}?oc={{ o.pk }}">Recibir</a>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5"><div class="empty">No hay órdenes pendientes de recibir.</div></td></tr>{% endfor %}
+  </tbody></table></div></div>
+  <div class="card"><div class="card-h"><h2>Movimientos recientes</h2><span class="hint">Kárdex</span></div><div class="tbl-wrap"><table class="tbl"><tbody>
+    {% for m in movimientos %}<tr><td class="hint num" style="white-space:nowrap">{{ m.fecha_movimiento|fecha_hora }}</td><td>{{ m.producto.nombre }}<div class="hint mono">{{ m.referencia }}</div></td><td class="r num"><b class="{% if m.delta > 0 %}qty-ok{% endif %}">{% if m.delta > 0 %}+{% endif %}{{ m.delta|cantidad }}</b></td></tr>
+    {% empty %}<tr><td><div class="empty">Aún no hay movimientos de inventario.</div></td></tr>{% endfor %}
+  </tbody></table></div></div>
+</div>
+{% endblock %}

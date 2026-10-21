@@ -1,0 +1,23 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block subtitulo %}Ventas · consulta, ticket y cancelación{% endblock %}
+{% block titulo %}Ventas registradas{% endblock %}
+{% block content %}
+<section class="card">
+  <form class="toolbar" method="get">
+    <div class="field"><label for="d">Desde</label><input class="inp" type="date" id="d" name="desde" value="{{ desde|iso }}"></div>
+    <div class="field"><label for="h">Hasta</label><input class="inp" type="date" id="h" name="hasta" value="{{ hasta|iso }}"></div>
+    <div class="field wide"><label for="q">Folio</label><input class="inp" id="q" name="q" value="{{ q }}" placeholder="VT-000123"></div>
+    <button class="btn navy" type="submit">{% icono 'filter' %} Filtrar</button>
+    <a class="btn" href="{% url 'ventas:pos' %}">{% icono 'cart' %} Volver al punto de venta</a>
+  </form>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Folio</th><th>Fecha</th><th>Almacén</th><th>Cliente</th><th>Vendedor</th><th>Método</th><th class="r">Total</th><th>Estado</th><th></th></tr></thead><tbody>
+  {% for v in pagina %}<tr><td class="mono">{{ v.folio }}</td><td style="white-space:nowrap">{{ v.fecha_venta|fecha_hora }}</td><td>{{ v.sucursal.corto }}</td><td>{{ v.cliente.nombre_razon_social }}</td><td>{{ v.creado_por.nombre_completo }}</td>
+  <td>{% for p in v.pagos.all %}{% if p.tipo == "COBRO" %}{{ p.get_metodo_display }}{% endif %}{% endfor %}</td><td class="r num"><b>{{ v.total|dinero }}</b></td>
+  <td>{% if v.estado == "CANCELADA" %}{% pill "crit" "Cancelada" %}{% else %}{% pill "ok" "Completada" %}{% endif %}</td>
+  <td class="r" style="white-space:nowrap"><a class="btn sm" href="{% url 'ventas:detalle' v.pk %}">{% icono 'eye' %} Ver</a> <a class="btn sm ghost" href="{% url 'ventas:ticket' v.pk %}" target="_blank">{% icono 'print' %} Ticket</a></td></tr>
+  {% empty %}<tr><td colspan="9"><div class="empty">Sin ventas en el periodo.</div></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% if pagina.paginator.num_pages > 1 %}<div class="pager"><span>{{ pagina.paginator.count }} ventas</span><div class="row" style="gap:6px">{% if pagina.has_previous %}<a class="btn sm" href="{% query page=pagina.previous_page_number %}">‹</a>{% endif %}<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>{% if pagina.has_next %}<a class="btn sm" href="{% query page=pagina.next_page_number %}">›</a>{% endif %}</div></div>{% endif %}
+</section>
+{% endblock %}

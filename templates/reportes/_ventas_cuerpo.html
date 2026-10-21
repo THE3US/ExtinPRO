@@ -1,0 +1,12 @@
+{% load spvci %}
+<div class="kpis">
+  <div class="card kpi" style="padding:14px"><div><div class="lab">Ventas</div><div class="val">{{ r.ventas }}</div><div class="sub">{{ desde|fecha }} – {{ hasta|fecha }}</div></div></div>
+  <div class="card kpi" style="padding:14px"><div><div class="lab">Importe total</div><div class="val">{{ r.total|dinero }}</div><div class="sub">IVA incluido</div></div></div>
+  <div class="card kpi" style="padding:14px"><div><div class="lab">IVA trasladado</div><div class="val">{{ r.iva|dinero }}</div><div class="sub">Descuentos: {{ r.descuento|dinero }}</div></div></div>
+  <div class="card kpi" style="padding:14px"><div><div class="lab">Ticket promedio</div><div class="val">{{ r.ticket_promedio|dinero }}</div><div class="sub">Importe ÷ ventas</div></div></div>
+</div>
+<div class="card"><div class="card-h"><h3>Ventas por día</h3><span class="hint">Total con IVA{% if r.por_dia|length > 31 %} · últimos 31 días del periodo{% endif %}</span></div><div class="card-b">{{ puntos|json_script:"datos-rv" }}<div data-grafica="col" data-fuente="datos-rv"></div></div></div>
+<div class="grid g2">
+  <div class="card"><div class="card-h"><h3>Por método de pago</h3></div><table class="tbl"><thead><tr><th>Método</th><th class="r">Ventas</th><th class="r">Importe</th></tr></thead><tbody>{% for m in r.metodos %}<tr><td>{{ m.metodo }}</td><td class="r num">{{ m.ventas }}</td><td class="r num">{{ m.importe|dinero }}</td></tr>{% endfor %}</tbody></table></div>
+  <div class="card"><div class="card-h"><h3>Productos más vendidos</h3></div><table class="tbl"><thead><tr><th>Producto</th><th class="r">Cant.</th><th class="r">Importe s/IVA</th></tr></thead><tbody>{% for t in r.top %}<tr><td>{{ t.producto.nombre }}</td><td class="r num">{{ t.cantidad|cantidad }}</td><td class="r num">{{ t.importe|dinero }}</td></tr>{% empty %}<tr><td colspan="3"><div class="empty">Sin ventas en el periodo.</div></td></tr>{% endfor %}</tbody></table></div>
+</div>

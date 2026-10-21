@@ -1,0 +1,36 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<div class="steps" aria-label="Avance del conteo">
+  <span class="step {% if c.estado == 'ABIERTO' %}cur{% else %}done{% endif %}"><span class="n">1</span>Captura del conteo</span>
+  <span class="step {% if c.estado == 'CERRADO' %}cur{% elif c.estado == 'AJUSTADO' %}done{% endif %}"><span class="n">2</span>Cerrado · por autorizar</span>
+  <span class="step {% if c.estado == 'AJUSTADO' %}done{% endif %}"><span class="n">3</span>Ajustes aplicados al kárdex</span>
+</div>
+<form method="post">{% csrf_token %}
+<div class="split">
+  <section class="card"><div class="card-h"><div><h2>Conteo <span class="mono">{{ c.folio }}</span></h2><div class="hint">{{ c.sucursal.nombre }} · {{ c.fecha_inicio|fecha_hora }}{% if c.observaciones %} · {{ c.observaciones }}{% endif %}</div></div>
+    {% if c.estado == 'AJUSTADO' %}{% pill "ok" "Ajustado" %}{% elif c.estado == 'CERRADO' %}{% pill "warn" "Por autorizar" %}{% else %}{% pill "info" "Abierto" %}{% endif %}</div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Producto</th><th class="r">Sistema</th><th class="r" style="width:130px">Física</th><th class="r">Diferencia</th><th>Observaciones</th></tr></thead><tbody>
+    {% for d in detalles %}<tr><td>{% celda_producto d.producto %}</td><td class="r num">{{ d.existencia_sistema|cantidad }}</td>
+      <td class="r">{% if c.estado == 'ABIERTO' %}<input class="inp num" style="text-align:right;min-height:36px" type="number" min="0" step="any" name="fisica_{{ d.id }}" value="{{ d.existencia_fisica|cantidad }}" aria-label="Existencia física de {{ d.producto.nombre }}">{% else %}<b>{{ d.existencia_fisica|cantidad }}</b>{% endif %}</td>
+      <td class="r num"><b class="{% if d.diferencia > 0 %}qty-ok{% elif d.diferencia < 0 %}qty-low{% endif %}">{% if d.diferencia > 0 %}+{% endif %}{{ d.diferencia|cantidad }}</b></td>
+      <td>{% if c.estado == 'ABIERTO' %}<input class="inp" style="min-height:36px" name="obs_{{ d.id }}" value="{{ d.observaciones|default:'' }}" placeholder="Motivo de la diferencia">{% else %}<span class="hint">{{ d.observaciones|default:"" }}</span>{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+  </section>
+  <aside class="sticky"><div class="card"><div class="card-h"><h2>Resumen</h2></div><div class="card-b grid" style="gap:14px">
+    <div class="statebox"><div class="kv"><span>Productos contados</span><b>{{ detalles|length }}</b></div><div class="kv"><span>Con diferencia</span><b>{{ con_diferencia }}</b></div>
+      <div class="kv"><span>Elaboró</span><b>{{ c.creado_por.nombre_completo }}</b></div><div class="kv"><span>Autorizó</span><b>{{ c.autorizado_por.nombre_completo|default:"—" }}</b></div></div>
+    {% if errores %}<div class="alert crit">{% icono 'alert' %}<div><b>No se pudo continuar:</b><br>{% for e in errores %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div></div>{% endif %}
+    <div class="act-stack">
+      {% if c.estado == 'ABIERTO' %}
+        <button class="btn" name="accion" value="guardar">{% icono 'save' %} Guardar avance</button>
+        <button class="btn primary" name="accion" value="cerrar" data-confirmar="Al cerrar el conteo ya no podrás cambiar las cantidades físicas." data-confirmar-titulo="Cerrar conteo" data-confirmar-ok="Cerrar conteo" data-confirmar-peligro="no">{% icono 'check' %} Cerrar conteo</button>
+      {% elif c.estado == 'CERRADO' and "autorizar_oc" in modulos %}
+        <button class="btn primary" name="accion" value="autorizar" data-confirmar="Se registrará un movimiento AJUSTE por cada una de las {{ con_diferencia }} diferencias." data-confirmar-titulo="Autorizar ajustes" data-confirmar-ok="Autorizar ajustes" data-confirmar-peligro="no">{% icono 'shield' %} Autorizar ajustes</button>
+      {% elif c.estado == 'CERRADO' %}<div class="alert info">{% icono 'info' %}<div>Pendiente de autorización del Gerente o Administrador.</div></div>{% endif %}
+      <a class="btn" href="{% url 'inventario:conteos' %}">Volver a conteos</a>
+    </div>
+  </div></div></aside>
+</div>
+</form>
+{% endblock %}

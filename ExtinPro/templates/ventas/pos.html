@@ -1,0 +1,67 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<div class="spread">
+  <p class="muted">Caja <b style="color:var(--ink)">{{ sesion.caja.codigo }} · {{ sesion.caja.nombre }}</b> · abierta por {{ sesion.abierto_por.nombre_completo }} el {{ sesion.fecha_apertura|fecha_hora }}</p>
+  <div class="row"><a class="btn sm" href="{% url 'ventas:lista' %}">{% icono 'file' %} Ventas registradas</a><a class="btn sm" href="{% url 'ventas:caja' %}">{% icono 'cash' %} Corte de caja</a></div>
+</div>
+<div class="pos" id="pos" data-api="{% url 'ventas:registrar' %}" data-precio="{% if puede_precio %}1{% endif %}" data-sucursal="{{ sucursal_activa.corto }}" data-uuid="{{ uuid }}">
+  {% csrf_token %}
+  <section class="card ticket-panel" aria-label="Venta en captura">
+    <div class="card-h"><div><h2>Venta <span class="mono" id="vnFolioH">{{ folio }}</span></h2><div class="hint">{{ sucursal_activa.nombre }}</div></div>{% pill "info" "En captura" %}</div>
+    <div class="card-b grid g2" style="padding-bottom:14px">
+      <div class="field"><label for="vnFolio">Número de venta</label><input class="inp mono" id="vnFolio" value="{{ folio }}" readonly title="Folio provisional: se confirma al registrar"></div>
+      <div class="field"><label for="vnFecha">Fecha</label><input class="inp" id="vnFecha" value="{{ ahora|fecha }}" readonly></div>
+      <div class="field"><label for="vnCli">Cliente</label><select class="sel" id="vnCli">{% for c in clientes %}<option value="{{ c.pk }}">{{ c.nombre_razon_social }}{% if c.descuento_pct %} · {{ c.descuento_pct|cantidad }} % desc.{% endif %}</option>{% endfor %}</select></div>
+      <div class="field"><label for="vnVend">Vendedor</label><input class="inp" id="vnVend" value="{{ user.nombre_completo }}" readonly></div>
+    </div>
+    <div class="cart" id="cart"></div>
+    <div id="venSum"></div>
+  </section>
+
+  <section class="card" aria-label="Catálogo de productos">
+    <div class="card-h" style="align-items:flex-end">
+      <div class="scan" style="flex:1 1 320px"><div class="inp-icon">{% icono 'barcode' %}<label class="sr-only" for="vnScan">Escanear o escribir código</label><input class="inp" id="vnScan" placeholder="Escanea o escribe el código, SKU o nombre y presiona Enter" autocomplete="off" autofocus></div></div>
+      <button class="btn" type="button" data-abrir="modal-manual">{% icono 'plus' %} Agregar producto manualmente</button>
+      {% if "reporte_ventas" in modulos %}<a class="btn ghost" href="{% url 'reportes:ventas' %}">{% icono 'chart' %} Reporte de ventas</a>{% endif %}
+    </div>
+    <div class="chips" style="padding:14px 20px 0">{% for c in categorias %}<button type="button" class="chip {% if forloop.first %}on{% endif %}" data-cat="{{ c }}">{{ c }}</button>{% endfor %}</div>
+    <div class="prod-grid" id="pgrid">
+      {% for p in productos %}<button type="button" class="pcard" data-p="{{ p.pk }}" data-cat="{{ p.categoria }}" data-busca="{{ p.nombre|lower }} {{ p.sku|lower }} {{ p.codigo_barras|default:'' }}" {% if not p.es_servicio and p.existencia <= 0 %}disabled{% endif %}><div class="art">{% arte_producto p 70 %}</div><b>{{ p.nombre }}</b><span class="pr">{{ p.precio_venta|dinero }}</span><small>{{ p.sku }} · <span data-stock>{% if p.es_servicio %}Servicio{% elif p.existencia <= 0 %}Agotado{% else %}Existencia: {{ p.existencia|cantidad }}{% endif %}</span></small></button>
+      {% empty %}<div class="empty" style="grid-column:1/-1">No hay productos activos. Un Administrador puede darlos de alta en Administración → Productos.</div>{% endfor %}
+      <div class="empty hidden" id="pgridVacio" style="grid-column:1/-1">Ningún producto coincide con la búsqueda.</div>
+    </div>
+  </section>
+</div>
+{{ datos_productos|json_script:"pos-productos" }}
+{{ datos_clientes|json_script:"pos-clientes" }}
+{% endblock %}
+
+{% block modales %}
+<div class="overlay" id="modal-manual" hidden><div class="modal narrow" role="dialog" aria-modal="true" aria-label="Agregar producto">
+  <div class="modal-h"><div><h2>Agregar producto manualmente</h2><div class="hint" style="margin-top:2px">Para artículos sin código legible</div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b grid">
+    <div class="field"><label for="vmP">Producto</label><select class="sel" id="vmP">{% regroup productos by categoria as grupos %}{% for g in grupos %}<optgroup label="{{ g.grouper }}">{% for p in g.list %}<option value="{{ p.pk }}">{{ p.sku }} · {{ p.nombre }}{% if not p.es_servicio %} (exist. {{ p.existencia|cantidad }}){% endif %}</option>{% endfor %}</optgroup>{% endfor %}</select></div>
+    <div class="grid g3"><div class="field"><label for="vmQ">Cantidad</label><input class="inp" id="vmQ" type="number" min="1" value="1"></div>
+    <div class="field"><label for="vmPr">Precio unitario</label><input class="inp" id="vmPr" type="number" min="0" step="0.01" {% if not puede_precio %}readonly title="Solo Gerente o Administrador cambian precios"{% endif %}></div>
+    <div class="field"><label for="vmD">Descuento %</label><input class="inp" id="vmD" type="number" min="0" max="50" value="0"></div></div>
+    <div id="vmErr"></div>
+  </div>
+  <div class="modal-f"><button class="btn" data-cerrar>Cancelar</button><button class="btn navy" id="vmOk" type="button">{% icono 'plus' %} Agregar a la venta</button></div>
+</div></div>
+
+<div class="overlay" id="modal-ok" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-label="Venta registrada">
+  <div class="modal-h"><div><h2>Venta registrada</h2><div class="hint" style="margin-top:2px" id="okSub"></div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b"><div class="grid" style="grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start">
+    <div style="background:var(--bg);padding:14px;border-radius:10px" id="okTicket"></div>
+    <div class="grid" style="gap:14px">
+      <div class="alert ok">{% icono 'check' %}<div><b>Operación completada.</b> Se descontó el stock y se generó el ticket.<span id="okCorreo"></span></div></div>
+      <div><h3 style="font-size:15px;margin-bottom:8px">Existencias después de la venta</h3>
+        <table class="tbl"><thead><tr><th>Producto</th><th class="r">Antes</th><th class="r">Después</th><th>Estado</th></tr></thead><tbody id="okExist"></tbody></table></div>
+      <div class="statebox"><div class="kv"><span>Total</span><b id="okTotal"></b></div><div class="kv"><span>Importe pagado</span><b id="okPagado"></b></div><div class="kv"><span>Cambio</span><b id="okCambio"></b></div></div>
+    </div></div></div>
+  <div class="modal-f"><button class="btn" data-cerrar>Nueva venta</button><a class="btn navy" id="okImprimir" href="#" target="_blank" rel="noopener">{% icono 'print' %} Imprimir ticket</a></div>
+</div></div>
+{% endblock %}
+
+{% block scripts %}{% load static %}<script src="{% static 'js/pos.js' %}"></script>{% endblock %}

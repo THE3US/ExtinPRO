@@ -1,0 +1,20 @@
+{% load static %}<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{% block title %}{% if titulo_seccion %}{{ titulo_seccion }} · {% endif %}ExtinPro SPVCI{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/isotipo-extinpro.jpg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+  <link rel="stylesheet" href="{% static 'css/extinpro.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% block body %}{% endblock %}
+{% if messages %}<div class="hidden" aria-hidden="true">{% for m in messages %}<span data-toast="{% if m.level_tag == 'error' %}crit{% elif m.level_tag == 'warning' %}warn{% elif m.level_tag == 'success' %}ok{% else %}info{% endif %}" data-titulo="{{ m.message }}"{% if m.extra_tags %} data-msg="{{ m.extra_tags }}"{% endif %}></span>{% endfor %}</div>{% endif %}
+<script src="{% static 'js/spvci.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

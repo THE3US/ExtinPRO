@@ -1,0 +1,13 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<section class="card">
+  <form class="toolbar" method="get"><div class="field wide"><label for="q">Buscar</label><div class="inp-icon">{% icono 'search' %}<input class="inp" id="q" name="q" value="{{ q }}" placeholder="SKU, nombre o código de barras"></div></div>
+    <button class="btn navy" type="submit">{% icono 'search' %} Buscar</button><a class="btn primary" href="{% url 'catalogo:producto_nuevo' %}">{% icono 'plus' %} Nuevo producto</a></form>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Producto</th><th>Tipo</th><th>Categoría</th><th>Proveedor habitual</th><th class="r">Compra</th><th class="r">Venta</th><th class="r">Mín.</th><th>Estado</th><th></th></tr></thead><tbody>
+  {% for p in productos %}<tr><td>{% celda_producto p %}</td><td>{{ p.get_tipo_display }}</td><td>{{ p.categoria }}</td><td>{{ p.proveedor.nombre_razon_social|default:"—" }}</td><td class="r num">{{ p.precio_compra|dinero }}</td><td class="r num">{{ p.precio_venta|dinero }}</td><td class="r num">{{ p.stock_minimo|cantidad }}</td>
+  <td>{% if p.activo %}{% pill "ok" "Activo" %}{% else %}{% pill "off" "Descontinuado" %}{% endif %}</td><td class="r"><a class="btn sm" href="{% url 'catalogo:producto_editar' p.pk %}">Editar</a></td></tr>
+  {% empty %}<tr><td colspan="9"><div class="empty">Sin productos. Usa «Nuevo producto» o carga los datos de ejemplo (README).</div></td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

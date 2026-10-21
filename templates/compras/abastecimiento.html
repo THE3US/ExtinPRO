@@ -1,0 +1,73 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+{% if enviadas %}
+<div class="grid" style="gap:20px">
+  <section class="card"><div class="card-h"><div><h2>Solicitud enviada</h2><div class="hint">Órdenes de compra generadas</div></div>{% pill "ok" "Enviada" %}</div>
+    <div class="card-b grid" style="gap:16px"><div class="abas-sum">
+      {% for o in enviadas %}<div class="statebox">
+        <div class="spread"><b style="color:var(--navy)">{{ o.proveedor.nombre_razon_social }}</b><span class="mono">{{ o.folio }}</span></div>
+        <div class="sum-list">{% for d in o.detalles.all %}<div class="sum-row" style="font-size:13px"><span>{{ d.producto.nombre }} <span class="hint">· {{ o.sucursal.corto }}</span></span><b>{{ d.cantidad|cantidad }}</b></div>{% endfor %}</div>
+        <div class="kv"><span>Proveedor atendiente</span><b>{{ o.proveedor.nombre_razon_social }}</b></div>
+        <div class="kv"><span>Fecha prevista de entrega</span><b>{{ o.fecha_estimada|fecha }}</b></div>
+        <div class="kv"><span>Estado de abastecimiento</span><b>{% if o.estado == "BORRADOR" %}Pendiente de autorización{% else %}{{ o.get_estado_display }}{% endif %}</b></div>
+        <div class="kv"><span>Importe estimado (sin IVA)</span><b>{{ o.importe|dinero }}</b></div>
+      </div>{% endfor %}</div>
+      <div class="sum-total"><span>Total estimado (sin IVA)</span><b>{{ total_enviadas|dinero }}</b></div>
+    </div>
+    <div class="card-f">
+      <a class="btn" href="{% url 'compras:pedidos' %}">{% icono 'history' %} Consultar pedidos anteriores</a>
+      <a class="btn" href="{% url 'compras:comprobante_oc' %}?ids={% for o in enviadas %}{{ o.pk }}{% if not forloop.last %},{% endif %}{% endfor %}" target="_blank">{% icono 'print' %} Imprimir comprobante</a>
+      <a class="btn navy" href="{% url 'compras:abastecimiento' %}">{% icono 'plus' %} Nueva solicitud</a>
+    </div>
+  </section>
+</div>
+{% else %}
+<form method="post" action="{% url 'compras:abastecimiento_enviar' %}" id="abForm" class="grid" style="gap:20px" data-entrega="{{ entrega_prevista|fecha }}" data-autoriza="{% if 'autorizar_oc' in modulos %}1{% endif %}" novalidate>
+  {% csrf_token %}
+  <section class="card"><div class="card-h"><div><h2>Productos para abastecer</h2><div class="hint">Sugeridos por alerta de stock mínimo · cantidad para pedir = stock máximo − existencia − en camino</div></div>
+    <div class="row"><button type="button" class="btn" data-abrir="modal-agregar">{% icono 'plus' %} Agregar producto</button></div></div>
+    <div class="tbl-wrap"><table class="tbl wrap-h"><thead><tr><th class="c"><span class="sr-only">Incluir</span></th><th>Producto</th><th>Proveedor</th><th class="r" style="width:110px">Existencias actuales</th><th class="r" style="width:90px">Stock mín. / máx.</th><th class="r" style="width:80px">En camino</th><th class="r" style="width:90px">Cantidad para pedir</th><th class="r" style="width:110px">Cantidad solicitada</th><th style="width:116px">Prioridad</th></tr></thead>
+    <tbody id="abLineas">
+    {% for l in lineas %}<tr data-linea style="{% if not l.seleccionada %}opacity:.6{% endif %}">
+      <td class="c"><input type="checkbox" name="sel" value="{{ forloop.counter0 }}" aria-label="Incluir {{ l.producto.nombre }}" {% if l.seleccionada %}checked{% endif %}><input type="hidden" name="producto" value="{{ l.producto.pk }}"><input type="hidden" name="sucursal" value="{{ l.sucursal.pk }}"></td>
+      <td>{% with " · "|add:l.sucursal.corto as extra %}{% celda_producto l.producto extra %}{% endwith %}</td>
+      <td><select class="sel" name="proveedor" style="min-height:36px;min-width:150px;max-width:220px" aria-label="Proveedor"><option value="">Selecciona…</option>{% for pv in proveedores %}<option value="{{ pv.pk }}" {% if pv.pk == l.proveedor_id %}selected{% endif %}>{{ pv.nombre_razon_social }}</option>{% endfor %}</select></td>
+      <td class="r num"><b class="{% if l.existencia > l.producto.stock_minimo %}{% else %}qty-low{% endif %}">{{ l.existencia|cantidad }}</b><div>{% if l.existencia <= 0 %}{% pill "crit" "Agotado" %}{% else %}{% pill "warn" "Bajo mínimo" %}{% endif %}</div></td>
+      <td class="r num">{{ l.producto.stock_minimo|cantidad }} / {{ l.producto.stock_maximo|cantidad }}</td><td class="r num">{% if l.en_camino %}<span class="tag">{{ l.en_camino|cantidad }}</span>{% else %}—{% endif %}</td>
+      <td class="r num"><b>{{ l.sugerida|cantidad }}</b></td>
+      <td class="r"><input class="inp num" style="text-align:right;min-height:36px" type="number" min="0" step="1" name="cantidad" value="{{ l.cantidad|cantidad|cut:',' }}" aria-label="Cantidad solicitada"></td>
+      <td><select class="sel" name="prioridad" style="min-height:36px" aria-label="Prioridad"><option {% if l.prioridad == "Alta" %}selected{% endif %}>Alta</option><option {% if l.prioridad == "Media" %}selected{% endif %}>Media</option><option {% if l.prioridad == "Baja" %}selected{% endif %}>Baja</option></select></td></tr>
+    {% endfor %}
+    <tr id="abVacio" {% if lineas %}hidden{% endif %}><td colspan="9"><div class="empty">No hay productos bajo el mínimo. Usa “Agregar producto” para pedir otros.</div></td></tr>
+    </tbody></table></div>
+    <div class="card-b grid" style="border-top:1px solid var(--line-2)">
+      <div class="field"><label for="abObs">Observaciones para el proveedor</label><textarea class="txt" id="abObs" name="observaciones" style="min-height:64px" placeholder="Condiciones de entrega, horario de recepción, etc."></textarea></div>
+      <div id="abErr">{% if errores %}<div class="alert crit">{% icono 'alert' %}<div><b>No se puede enviar la solicitud:</b><br>{% for e in errores %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div></div>{% endif %}</div>
+    </div>
+    <div class="card-f">
+      <a class="btn" href="{% url 'compras:pedidos' %}">{% icono 'history' %} Consultar pedidos anteriores</a>
+      <button class="btn" type="submit" name="accion" value="vista_previa" formtarget="_blank">{% icono 'print' %} Imprimir comprobante</button>
+      <button class="btn primary" type="submit" name="accion" value="enviar" id="abEnviar" data-confirmar="" data-confirmar-titulo="Enviar solicitud de abastecimiento" data-confirmar-ok="Enviar solicitud" data-confirmar-peligro="no">{% icono 'send' %} Enviar solicitud</button>
+    </div>
+  </section>
+  <section id="abSum"></section>
+</form>
+{{ datos_productos|json_script:"ab-productos" }}{{ datos_existencias|json_script:"ab-existencias" }}{{ datos_proveedores|json_script:"ab-proveedores" }}{{ datos_sucursales|json_script:"ab-sucursales" }}
+{% endif %}
+{% endblock %}
+{% block modales %}
+{% if not enviadas %}
+<div class="overlay" id="modal-agregar" hidden><div class="modal narrow" role="dialog" aria-modal="true" aria-label="Agregar producto">
+  <div class="modal-h"><div><h2>Agregar producto a la solicitud</h2><div class="hint" style="margin-top:2px">Cualquier producto del catálogo</div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b grid">
+    <div class="field"><label for="aaP">Producto</label><select class="sel" id="aaP">{% for p in productos %}<option value="{{ p.pk }}">{{ p.sku }} · {{ p.nombre }}</option>{% endfor %}</select></div>
+    <div class="grid g2"><div class="field"><label for="aaA">Almacén de destino</label><select class="sel" id="aaA">{% for s in sucursales_usuario %}<option value="{{ s.pk }}" {% if s.pk == sucursal_activa.pk %}selected{% endif %}>{{ s.nombre }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="aaQ">Cantidad solicitada</label><input class="inp" id="aaQ" type="number" min="1" value="5"></div></div>
+    <div id="aaErr"></div>
+  </div>
+  <div class="modal-f"><button class="btn" data-cerrar>Cancelar</button><button type="button" class="btn navy" id="aaOk">{% icono 'plus' %} Agregar</button></div>
+</div></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% load static %}<script src="{% static 'js/abastecimiento.js' %}"></script>{% endblock %}

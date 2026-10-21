@@ -1,0 +1,17 @@
+{% load spvci %}
+{% if form.non_field_errors %}<div class="alert crit">{% icono 'alert' %}<div>{% for e in form.non_field_errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div></div>{% endif %}
+{% for h in form.hidden_fields %}{{ h }}{% endfor %}
+<div class="form-grid">
+{% for f in form.visible_fields %}
+  {% if f.widget_type == "checkbox" %}
+  <label class="check {% if f.field.widget.attrs.full %}full{% endif %}">{{ f }} {{ f.label }}</label>
+  {% else %}
+  <div class="field {% if f.widget_type == 'textarea' %}full{% endif %}">
+    <label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} <span class="req">*</span>{% endif %}</label>
+    {{ f }}
+    {% if f.help_text %}<span class="hint">{{ f.help_text }}</span>{% endif %}
+    {% for e in f.errors %}<span class="campo-error">{{ e }}</span>{% endfor %}
+  </div>
+  {% endif %}
+{% endfor %}
+</div>

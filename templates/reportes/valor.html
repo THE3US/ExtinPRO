@@ -1,0 +1,32 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+{% for t, msg in f.errores %}<div class="hidden"><span data-toast="crit" data-titulo="{{ t }}" data-msg="{{ msg }}"></span></div>{% endfor %}
+<section class="card"><form class="toolbar" method="get" novalidate>
+  <div class="field"><label for="vlCorte">Fecha de corte</label><input class="inp" type="date" id="vlCorte" name="corte" value="{{ f.corte|iso }}" min="{{ f.inicio|iso }}" max="{{ hoy|iso }}"></div>
+  <div class="field"><label for="vlAlm">Almacén</label><select class="sel" id="vlAlm" name="alm"><option value="">Todos</option>{% for s in sucursales_usuario %}<option value="{{ s.pk }}" {% if f.alm == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nombre }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="vlCat">Categoría</label><select class="sel" id="vlCat" name="cat"><option value="">Todas</option>{% for c in categorias %}<option {% if f.cat == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+  <div class="field wide"><label for="vlProd">Producto</label><select class="sel" id="vlProd" name="prod"><option value="">Todos</option>{% for p in productos %}<option value="{{ p.pk }}" {% if f.prod == p.pk %}selected{% endif %}>{{ p.sku }} · {{ p.nombre }}</option>{% endfor %}</select></div>
+  <button class="btn navy" type="submit">{% icono 'filter' %} Aplicar filtros</button>
+</form>
+<div class="spread" style="padding:12px 20px"><span class="hint">Corte al <b style="color:var(--ink)">{{ f.corte|fecha }}</b> · {{ filtro_txt }} · valuación a precio de compra (costo de referencia, sin IVA)</span>
+  <div class="row"><a class="btn primary" href="{% url 'reportes:valor_reporte' %}?{{ request.GET.urlencode }}" target="_blank">{% icono 'file' %} Generar reporte</a><a class="btn" href="{% url 'reportes:valor_reporte' %}?{{ request.GET.urlencode }}&imprimir=1" target="_blank">{% icono 'download' %} Exportar PDF</a><a class="btn" href="?{{ request.GET.urlencode }}&formato=xlsx">{% icono 'sheet' %} Exportar Excel</a></div></div>
+</section>
+
+<div class="kpis">
+  <div class="card kpi" style="grid-column:span 2"><div class="ico">{% icono 'dollar' %}</div><div><div class="lab">Valor total de inventario</div><div class="val" style="font-size:34px">{{ res.total|dinero }}</div><div class="sub"><b style="color:{% if delta >= 0 %}var(--ok){% else %}var(--crit){% endif %}">{% if delta >= 0 %}▲{% else %}▼{% endif %} {{ delta|floatformat:1|cut:"-" }} %</b> frente al cierre de {{ prev_mes }} ({{ prev.total|dinero }})</div></div></div>
+  <div class="card kpi"><div class="ico ok">{% icono 'box' %}</div><div><div class="lab">Cantidad de unidades totales</div><div class="val">{{ res.unidades|cantidad }}</div><div class="sub">{{ filas|length }} productos con existencia</div></div></div>
+  <div class="card kpi"><div class="ico warn">{% icono 'chart' %}</div><div><div class="lab">Costo promedio por unidad</div><div class="val">{{ costo_promedio|dinero }}</div><div class="sub">Valor ÷ unidades</div></div></div>
+</div>
+
+<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+  <section class="card"><div class="card-h"><div><h2>Valor por categoría</h2><div class="hint">Pesos a costo, al corte</div></div></div><div class="card-b">{% if puntos_cat %}{{ puntos_cat|json_script:"datos-cat" }}<div data-grafica="hbar" data-fuente="datos-cat"></div>{% else %}<div class="empty">Sin datos para los filtros.</div>{% endif %}</div></section>
+  <section class="card"><div class="card-h"><div><h2>Datos históricos</h2><div class="hint">Valor al cierre de cada mes · el punto rojo es el corte</div></div></div><div class="card-b">{{ historico|json_script:"datos-hist" }}<div data-grafica="linea" data-fuente="datos-hist" data-etiqueta="Valor histórico del inventario"></div></div></section>
+</div>
+
+<section class="card"><div class="card-h"><div><h2>Valor por producto</h2><div class="hint">Ordenado de mayor a menor valor</div></div><span class="hint">{{ filas|length }} productos</span></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Producto</th><th>Categoría</th><th class="r">Unidades</th><th class="r">Costo unitario</th><th class="r">Valor</th><th style="width:200px">Participación</th></tr></thead><tbody>
+{% for x in filas %}<tr><td>{% celda_producto x.producto %}</td><td>{{ x.producto.categoria }}</td><td class="r num">{{ x.unidades|cantidad }}</td><td class="r num">{{ x.producto.precio_compra|dinero }}</td><td class="r num"><b>{{ x.valor|dinero }}</b></td><td><div class="row" style="gap:10px;flex-wrap:nowrap"><div class="bar-inline" style="flex:1"><i style="width:{{ x.barra|floatformat:1 }}%"></i></div><span class="num hint" style="width:44px;text-align:right">{{ x.pct|floatformat:1 }} %</span></div></td></tr>
+{% empty %}<tr><td colspan="6"><div class="empty">Sin existencias para los filtros elegidos.</div></td></tr>{% endfor %}
+</tbody><tfoot><tr><td colspan="2">Total</td><td class="r num">{{ res.unidades|cantidad }}</td><td></td><td class="r num">{{ res.total|dinero }}</td><td>100 %</td></tr></tfoot></table></div></section>
+{% endblock %}

@@ -1,0 +1,8 @@
+from django.apps import AppConfig
+
+
+class ServicioConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.servicio"
+    label = "servicio"
+    verbose_name = "Servicio técnico y garantías"

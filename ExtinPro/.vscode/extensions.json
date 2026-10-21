@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "batisteo.vscode-django",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg"
+  ]
+}

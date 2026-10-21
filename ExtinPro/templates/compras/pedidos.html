@@ -1,0 +1,19 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block subtitulo %}Órdenes de compra · SPVCI-OC-05 Seguimiento{% endblock %}
+{% block titulo %}Pedidos anteriores{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-b"><div class="chips">
+    <a class="chip {% if not estado %}on{% endif %}" href="?">Todos</a>
+    {% for k, t in estados %}<a class="chip {% if estado == k %}on{% endif %}" href="?estado={{ k }}">{{ t }}</a>{% endfor %}
+  </div></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Destino</th><th class="r">Partidas</th><th class="r">Importe</th><th>Entrega prevista</th><th>Estado</th><th></th></tr></thead><tbody>
+  {% for o in ordenes %}<tr><td class="mono">{{ o.folio }}</td><td>{{ o.fecha_orden|fecha }}</td><td>{{ o.proveedor.nombre_razon_social }}</td><td>{{ o.sucursal.corto }}</td><td class="r num">{{ o.detalles.all|length }}</td><td class="r num">{{ o.importe|dinero }}</td><td>{{ o.fecha_estimada|fecha }}</td>
+    <td>{% if o.estado == "BORRADOR" %}{% pill "off" "Por autorizar" %}{% elif o.estado == "AUTORIZADA" %}{% pill "info" "Enviada · por recibir" %}{% elif o.estado == "PARCIAL" %}{% pill "warn" "Parcial" %}{% elif o.estado == "RECIBIDA" %}{% pill "ok" "Recibida" %}{% else %}{% pill "crit" "Cancelada" %}{% endif %}</td>
+    <td class="r" style="white-space:nowrap">{% if o.estado == "BORRADOR" and "autorizar_oc" in modulos %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="orden" value="{{ o.pk }}"><button class="btn sm navy" type="submit">Autorizar</button></form> {% endif %}{% if o.pendiente_de_recibir and "recepcion" in modulos %}<a class="btn sm" href="{% url 'compras:recepcion' %}?oc={{ o.pk }}">Recibir</a> {% endif %}<a class="btn sm ghost" href="{% url 'compras:comprobante_oc' %}?ids={{ o.pk }}" target="_blank">{% icono 'file' %} Ver</a></td></tr>
+  {% empty %}<tr><td colspan="9"><div class="empty">Sin órdenes en este estado.</div></td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="card-f"><a class="btn" href="{% url 'compras:abastecimiento' %}">Volver a abastecimiento</a></div>
+</section>
+{% endblock %}

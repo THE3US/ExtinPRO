@@ -1,0 +1,26 @@
+{% load spvci %}
+<div class="overlay drawer" hidden><div class="modal" role="dialog" aria-modal="true" aria-label="Detalle de producto">
+  <div class="modal-h"><div><h2>{{ p.nombre }}</h2><div class="hint" style="margin-top:2px">{{ p.sku }} · {{ p.categoria }}</div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b grid" style="gap:18px">
+    <div class="row" style="gap:18px;align-items:center"><div style="width:110px;height:120px;border-radius:12px;background:var(--navy-50);display:grid;place-items:center;flex:none">{% arte_producto p 96 %}</div>
+      <div class="grid" style="gap:6px">{% pill estado.0 estado.1 %}<div>{% codigo_barras p.codigo_barras 230 66 %}</div></div></div>
+    <div class="statebox">
+      <div class="kv"><span>Tipo</span><b>{{ p.get_tipo_display }}</b></div>
+      <div class="kv"><span>Marca</span><b>{{ p.marca|default:"—" }}</b></div>
+      <div class="kv"><span>Proveedor habitual</span><b>{{ p.proveedor.nombre_razon_social|default:"—" }}</b></div>
+      <div class="kv"><span>Unidad de medida</span><b>{{ p.get_unidad_medida_display }}</b></div>
+      {% if modelo %}<div class="kv"><span>Agente extintor</span><b>{{ modelo.get_tipo_agente_display }}</b></div><div class="kv"><span>Capacidad</span><b>{{ modelo.capacidad|cantidad }} {{ modelo.unidad_capacidad }}</b></div><div class="kv"><span>Recarga sugerida</span><b>cada {{ modelo.meses_entre_recargas }} meses</b></div>{% endif %}
+    </div>
+    <div><h3 style="font-size:15px;margin-bottom:8px">Precios</h3><div class="statebox">
+      <div class="kv"><span>Precio de compra (sin IVA)</span><b>{{ p.precio_compra|dinero }}</b></div>
+      <div class="kv"><span>Precio de venta (sin IVA)</span><b>{{ p.precio_venta|dinero }}</b></div>
+      <div class="kv"><span>Precio de venta con IVA</span><b>{{ p.precio_con_iva|dinero }}</b></div>
+      <div class="kv"><span>Margen bruto</span><b>{{ p.margen_pct }} %</b></div>
+    </div></div>
+    <div><h3 style="font-size:15px;margin-bottom:8px">Existencias por almacén</h3>
+      <table class="tbl"><thead><tr><th>Almacén</th><th class="r">Existencia</th><th class="r">Mínimo</th><th>Nivel</th><th>Estado</th></tr></thead><tbody>
+      {% for f in filas %}<tr><td>{{ f.sucursal.nombre }}</td><td class="r num"><b>{{ f.existencia|cantidad }}</b></td><td class="r num">{{ p.stock_minimo|cantidad }}</td><td><div class="bar-inline" title="{{ f.pct }}% del stock máximo ({{ p.stock_maximo|cantidad }})"><i style="width:{{ f.pct }}%;background:{% if f.estado.0 == 'ok' %}var(--navy){% else %}var(--crit){% endif %}"></i></div></td><td>{% pill f.estado.0 f.estado.1 %}</td></tr>{% endfor %}
+      </tbody><tfoot><tr><td>Total</td><td class="r num">{{ total|cantidad }}</td><td colspan="3" class="hint">Stock máximo de referencia por almacén: {{ p.stock_maximo|cantidad }}</td></tr></tfoot></table></div>
+  </div>
+  <div class="modal-f"><button class="btn" data-cerrar>Cerrar</button><a class="btn navy" href="{% url 'inventario:historial' p.pk %}" data-fragmento>{% icono 'history' %} Ver historial</a></div>
+</div></div>

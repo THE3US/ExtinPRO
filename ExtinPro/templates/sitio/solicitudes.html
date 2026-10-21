@@ -1,0 +1,11 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<section class="card"><div class="card-h"><div><h2>Solicitudes de cotización del sitio web</h2><div class="hint">Formulario de contacto · CP-08</div></div><span class="hint">{{ solicitudes|length }} recibidas</span></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Folio</th><th>Fecha</th><th>Nombre</th><th>Contacto</th><th>Espacio · servicio</th><th>Mensaje</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for s in solicitudes %}<tr><td class="mono">{{ s.folio }}</td><td style="white-space:nowrap">{{ s.fecha|fecha_hora }}</td><td>{{ s.nombre }}</td><td class="mono">{{ s.contacto }}</td><td>{{ s.tipo_espacio }}<div class="hint">{{ s.servicio }}</div></td><td class="hint" style="max-width:320px">{{ s.mensaje|default:"—" }}</td>
+<td>{% if s.atendida %}{% pill "ok" "Atendida" %}{% else %}{% pill "warn" "Pendiente" %}{% endif %}</td>
+<td class="r"><form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ s.pk }}"><button class="btn sm">{% if s.atendida %}Marcar pendiente{% else %}Marcar atendida{% endif %}</button></form></td></tr>
+{% empty %}<tr><td colspan="8"><div class="empty">Aún no llegan solicitudes del sitio web.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

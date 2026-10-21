@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load spvci %}
+{% block title %}Ticket {{ v.folio }}{% endblock %}
+{% block body %}
+<div class="print-page">
+  <div class="doc-actions no-print"><a class="btn" href="{% url 'ventas:pos' %}">Volver a ventas</a><button class="btn navy" type="button" onclick="window.print()">{% icono 'print' %} Imprimir</button></div>
+  {% include "ventas/_ticket.html" %}
+</div>
+{% endblock %}
+{% block scripts %}{% if request.GET.imprimir %}<script>window.addEventListener("load", () => window.print());</script>{% endif %}{% endblock %}

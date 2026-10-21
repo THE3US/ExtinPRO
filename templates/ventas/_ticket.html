@@ -1,0 +1,14 @@
+{% load static spvci %}
+<div class="receipt">
+  <img src="{% static 'img/isotipo-extinpro.jpg' %}" alt="ExtinPro"><div class="c" style="font-weight:600;font-size:14px">EXTINPRO</div><div class="c">Tu seguridad, nuestra prioridad</div><div class="c">{{ v.sucursal.nombre }} · Aguascalientes, Ags.</div>
+  <hr><div class="l"><span>Ticket</span><span>{{ v.folio }}</span></div><div class="l"><span>Fecha</span><span>{{ v.fecha_venta|fecha_hora }}</span></div><div class="l"><span>Cliente</span><span>{{ v.cliente.nombre_razon_social|truncatechars:22 }}</span></div><div class="l"><span>RFC</span><span>{{ v.cliente.rfc|default:"—" }}</span></div><div class="l"><span>Atendió</span><span>{{ v.creado_por.nombre_completo }}</span></div><hr>
+  {% if v.estado == "CANCELADA" %}<div class="c" style="font-weight:600;border:1px solid #1d2228;padding:4px;margin-bottom:8px">VENTA CANCELADA</div>{% endif %}
+  {% for d in v.detalles.all %}<div>{{ d.producto.nombre }}</div><div class="l"><span>{{ d.cantidad|cantidad }} × {{ d.precio_unitario|dinero }}{% if d.descuento %} −{{ d.descuento_pct|cantidad }}%{% endif %}</span><span>{{ d.importe|dinero }}</span></div>{% endfor %}
+  <hr><div class="l"><span>Subtotal</span><span>{{ v.subtotal|dinero }}</span></div><div class="l"><span>Descuento</span><span>−{{ v.descuento_total|dinero }}</span></div><div class="l"><span>IVA 16%</span><span>{{ v.iva_total|dinero }}</span></div>
+  <div class="l tot"><span>TOTAL</span><span>{{ v.total|dinero }}</span></div><hr>
+  {% with p=v.pagos.first %}{% if p %}
+  <div class="l"><span>{{ p.get_metodo_display }}</span><span>{% if p.metodo == "EFECTIVO" and pagado %}{{ pagado|dinero }}{% else %}{{ p.monto|dinero }}{% endif %}</span></div>
+  {% if p.metodo == "EFECTIVO" %}{% if cambio is not None %}<div class="l"><span>Cambio</span><span>{{ cambio|dinero }}</span></div>{% endif %}{% else %}<div class="l"><span>Autorización</span><span>{{ p.referencia|default:"—" }}</span></div>{% endif %}
+  {% endif %}{% endwith %}
+  <hr><div class="c">Conserva tu ticket para cambios y garantías.</div><div class="c" style="margin-top:4px">Comprobante simplificado · no es CFDI</div>
+</div>

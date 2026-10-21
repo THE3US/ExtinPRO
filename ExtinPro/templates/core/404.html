@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% load spvci %}
+{% block title %}No encontrado · ExtinPro{% endblock %}
+{% block body %}
+<div style="min-height:100vh;display:grid;place-items:center;padding:24px"><div class="card" style="max-width:520px"><div class="card-b grid" style="gap:12px">
+  <h2>No encontramos esta página</h2><p class="muted">Puede que no exista o que pertenezca a un almacén al que no tienes acceso.</p>
+  <div class="row"><a class="btn navy" href="{% if user.is_authenticated %}{% url 'core:inicio' %}{% else %}{% url 'sitio:inicio' %}{% endif %}">Ir al inicio</a></div>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static spvci %}
+{% block title %}Iniciar sesión · ExtinPro SPVCI{% endblock %}
+{% block body %}
+<div class="login">
+  <div class="login-art">
+    <div>
+      <span class="plate"><img src="{% static 'img/logo-extinpro.jpg' %}" alt="ExtinPro, Tu seguridad, nuestra prioridad"></span>
+      <h2>Tu seguridad, <span>nuestra prioridad.</span></h2>
+      <p>Sistema de punto de venta y control de inventario (SPVCI): ventas, recepción de mercancía, abastecimiento y existencias en un solo lugar.</p>
+    </div>
+    <p style="font-size:13px;position:relative;z-index:1">Proyecto Integrador I · UPA · ITIID · Grupo 3B</p>
+    <div class="diag" aria-hidden="true"><i></i><i></i><i></i></div>
+  </div>
+  <div class="login-form">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <a href="{% url 'sitio:inicio' %}" class="hint" style="text-decoration:none">← Volver al sitio web</a>
+      <div><h1>Iniciar sesión</h1><p class="muted" style="margin-top:6px">Ingresa tu usuario y contraseña para acceder al sistema.</p></div>
+      <div class="field"><label for="lgU">Usuario</label><div class="inp-icon">{% icono 'user' %}<input class="inp" id="lgU" name="usuario" autocomplete="username" value="{{ usuario_capturado }}" autofocus></div></div>
+      <div class="field"><label for="lgP">Contraseña</label><div class="inp-icon">{% icono 'lock' %}<input class="inp" id="lgP" name="contrasena" type="password" autocomplete="current-password"></div></div>
+      <div class="field"><label for="lgA">Sucursal</label><select class="sel" id="lgA" name="sucursal">{% for s in sucursales %}<option value="{{ s.pk }}" {% if s.pk|stringformat:"s" == sucursal_capturada %}selected{% endif %}>{{ s.nombre }}</option>{% empty %}<option value="">Sin sucursales registradas</option>{% endfor %}</select></div>
+      <div id="lgErr">{% if resultado and not resultado.ok %}
+        {% if resultado.bloqueado %}<div class="alert crit">{% icono 'lock' %}<div><b>Cuenta bloqueada.</b> {{ resultado.mensaje|cut:"Cuenta bloqueada. " }}</div></div>
+        {% else %}<div class="alert crit">{% icono 'alert' %}<div>{% if resultado.intentos %}<b>Usuario o contraseña incorrectos.</b> Intento {{ resultado.intentos }} de 3; al tercero la cuenta se bloquea.{% else %}{{ resultado.mensaje }}{% endif %}</div></div>{% endif %}
+      {% endif %}</div>
+      <button class="btn primary" type="submit" style="min-height:46px" {% if resultado.bloqueado %}disabled{% endif %}>Iniciar sesión</button>
+      {% if not sucursales %}<div class="demo-cred">Base de datos vacía: crea la primera sucursal y el administrador con <code>python manage.py inicializar</code> (ver README).</div>{% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

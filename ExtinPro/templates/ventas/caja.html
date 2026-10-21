@@ -1,0 +1,38 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block subtitulo %}Caja · SESION_CAJA y ARQUEO_CAJA{% endblock %}
+{% block titulo %}Corte de caja{% endblock %}
+{% block content %}
+{% if sesion %}
+<div class="split">
+  <section class="card"><div class="card-h"><div><h2>Sesión abierta · {{ sesion.caja.codigo }} {{ sesion.caja.nombre }}</h2><div class="hint">Abierta por {{ sesion.abierto_por.nombre_completo }} · {{ sesion.fecha_apertura|fecha_hora }}</div></div>{% pill "ok" "Abierta" %}</div>
+    <form method="post" class="card-b grid" style="gap:16px">{% csrf_token %}
+      <div class="grid g2">
+        <div class="field"><label for="ef">Efectivo contado <span class="req">*</span></label><input class="inp num" id="ef" name="efectivo_contado" type="number" min="0" step="0.01" required value="{{ request.POST.efectivo_contado }}"><span class="hint">Cuenta el efectivo físico de la caja, incluido el fondo.</span></div>
+        <div class="field"><label for="tj">Total del reporte de la terminal <span class="req">*</span></label><input class="inp num" id="tj" name="tarjeta_reportado" type="number" min="0" step="0.01" required value="{{ request.POST.tarjeta_reportado }}"><span class="hint">Importe del cierre de la terminal bancaria.</span></div>
+      </div>
+      <div class="field"><label for="obs">Observaciones</label><textarea class="txt" id="obs" name="observaciones" placeholder="Obligatorio si hay diferencia (ck_arqueo_justifica_diferencia)">{{ request.POST.observaciones }}</textarea></div>
+      {% if errores %}<div class="alert crit">{% icono 'alert' %}<div><b>No se puede cerrar la caja:</b><br>{% for e in errores %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div></div>{% endif %}
+      <div class="row"><button class="btn primary" type="submit" data-confirmar="Se registrará el arqueo y la sesión quedará cerrada; para seguir vendiendo habrá que abrir la caja otra vez." data-confirmar-titulo="Cerrar caja" data-confirmar-ok="Cerrar caja">{% icono 'check' %} Registrar arqueo y cerrar caja</button><a class="btn" href="{% url 'ventas:pos' %}">Volver a ventas</a></div>
+    </form>
+  </section>
+  <aside class="sticky"><div class="card"><div class="card-h"><h2>Importes esperados</h2></div><div class="card-b grid" style="gap:14px">
+    <div class="sum-list">
+      <div class="sum-row"><span>Fondo inicial</span><b>{{ sesion.fondo_inicial|dinero }}</b></div>
+      <div class="sum-row"><span>Efectivo esperado</span><b>{{ totales.efectivo_esperado|dinero }}</b></div>
+      <div class="sum-row"><span>Tarjeta esperado</span><b>{{ totales.tarjeta_esperado|dinero }}</b></div>
+    </div>
+    <div class="statebox"><div class="kv"><span>Ventas completadas</span><b>{{ totales.ventas }}</b></div><div class="kv"><span>Importe vendido</span><b>{{ totales.importe_ventas|dinero }}</b></div></div>
+  </div></div></aside>
+</div>
+{% else %}
+<div class="alert info">{% icono 'info' %}<div>No tienes una caja abierta en {{ sucursal_activa.nombre }}. <a href="{% url 'ventas:pos' %}">Abrir caja</a></div></div>
+{% endif %}
+<section class="card"><div class="card-h"><h2>Sesiones recientes · {{ sucursal_activa.nombre }}</h2></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Caja</th><th>Apertura</th><th>Cierre</th><th>Abrió</th><th>Cerró</th><th class="r">Fondo</th><th class="r">Diferencia</th><th>Estado</th></tr></thead><tbody>
+{% for s in historial %}{% with a=s.arqueos.all.0 %}<tr><td>{{ s.caja.codigo }}</td><td>{{ s.fecha_apertura|fecha_hora }}</td><td>{{ s.fecha_cierre|fecha_hora }}</td><td>{{ s.abierto_por.nombre_completo }}</td><td>{{ s.cerrado_por.nombre_completo|default:"—" }}</td><td class="r num">{{ s.fondo_inicial|dinero }}</td>
+<td class="r num">{% if a %}<b class="{% if a.diferencia != 0 %}qty-low{% else %}qty-ok{% endif %}">{{ a.diferencia|dinero }}</b>{% if a.observaciones %}<div class="hint">{{ a.observaciones }}</div>{% endif %}{% else %}—{% endif %}</td>
+<td>{% if s.estado == "ABIERTA" %}{% pill "ok" "Abierta" %}{% else %}{% pill "off" "Cerrada" %}{% endif %}</td></tr>{% endwith %}
+{% empty %}<tr><td colspan="8"><div class="empty">Sin sesiones.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

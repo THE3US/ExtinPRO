@@ -1,0 +1,21 @@
+# Configuración local y secretos
+.env
+*.env.local
+
+# Entorno virtual de Python
+.venv/
+venv/
+
+# Archivos generados
+__pycache__/
+*.py[cod]
+staticfiles/
+media/
+*.log
+.coverage
+htmlcov/
+
+# Editores y sistema
+.idea/
+.DS_Store
+Thumbs.db

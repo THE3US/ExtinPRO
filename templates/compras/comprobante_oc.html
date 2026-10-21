@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load spvci %}
+{% block title %}{% if previa %}Vista previa de la solicitud{% else %}Comprobante de solicitud de abastecimiento{% endif %}{% endblock %}
+{% block body %}
+<div class="print-page">
+  <div class="doc-actions no-print"><a class="btn" href="{% url 'compras:abastecimiento' %}">Volver</a>{% if ordenes %}<button class="btn navy" type="button" onclick="window.print()">{% icono 'print' %} Imprimir</button>{% endif %}</div>
+  <div class="grid" style="gap:16px;max-width:980px;margin:0 auto">
+  {% for o in ordenes %}
+  <div class="doc" style="position:relative">
+    {% if previa %}<div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none"><span style="font:800 48px var(--f-display);color:rgba(11,47,97,.07);transform:rotate(-16deg)">VISTA PREVIA</span></div>{% endif %}
+    {% include "parciales/doc_head.html" with titulo="ORDEN DE COMPRA" folio=o.folio %}
+    <div style="text-align:right;margin-top:-6px">{% if previa %}{% pill "off" "Por enviar" %}{% elif o.estado == "BORRADOR" %}{% pill "off" "Por autorizar" %}{% elif o.estado == "CANCELADA" %}{% pill "crit" "Cancelada" %}{% elif o.estado == "RECIBIDA" %}{% pill "ok" "Recibida" %}{% elif o.estado == "PARCIAL" %}{% pill "warn" "Parcial" %}{% else %}{% pill "info" "Enviada · por recibir" %}{% endif %}</div>
+    <div class="doc-meta"><div><span>Fecha</span><b>{{ o.fecha_orden|fecha }}</b></div><div><span>Proveedor</span><b>{{ o.proveedor.nombre_razon_social }}</b></div><div><span>RFC</span><b class="mono">{{ o.proveedor.rfc|default:"—" }}</b></div>
+    <div><span>Entregar en</span><b>{{ o.sucursal.nombre }}</b></div><div><span>Fecha prevista de entrega</span><b>{{ o.fecha_estimada|fecha }}</b></div><div><span>Elaboró</span><b>{{ o.creado_por.nombre_completo }}</b></div></div>
+    <table class="tbl" style="margin-top:10px"><thead><tr><th>Código</th><th>Producto</th><th class="r">Cantidad</th><th class="r">Costo unit.</th><th class="r">Importe</th></tr></thead><tbody>
+    {% for l in o.lineas %}<tr><td class="mono">{{ l.producto.sku }}</td><td>{{ l.producto.nombre }}</td><td class="r num">{{ l.cantidad|cantidad }}</td><td class="r num">{{ l.costo|dinero }}</td><td class="r num">{{ l.importe|dinero }}</td></tr>{% endfor %}</tbody>
+    <tfoot><tr><td colspan="4" class="r">Subtotal</td><td class="r num">{{ o.subtotal|dinero }}</td></tr><tr><td colspan="4" class="r">IVA 16 %</td><td class="r num">{{ o.iva|dinero }}</td></tr><tr><td colspan="4" class="r">Total</td><td class="r num">{{ o.total|dinero }}</td></tr></tfoot></table>
+    {% if o.observaciones %}<div style="margin-top:10px;font-size:13px"><b>Observaciones:</b> {{ o.observaciones }}</div>{% endif %}
+    <div class="doc-foot"><div class="sign">Autorizó</div><span style="align-self:flex-end">Generado por SPVCI · ExtinPro</span></div>
+  </div>
+  {% empty %}
+  <div class="card"><div class="card-b"><div class="empty">Nada que imprimir: selecciona productos con proveedor y cantidad.</div></div></div>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

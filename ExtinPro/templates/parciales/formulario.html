@@ -1,0 +1,14 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block subtitulo %}{{ subtitulo_seccion }}{% endblock %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width:920px" novalidate>{% csrf_token %}
+  <div class="card-h"><div><h2>{{ titulo }}</h2>{% if ayuda %}<div class="hint">{{ ayuda }}</div>{% endif %}</div></div>
+  <div class="card-b grid" style="gap:18px">
+    {% include "parciales/campos.html" %}
+    {% for extra in formularios_extra %}<div><h3 style="font-size:15px;margin-bottom:10px">{{ extra.titulo }}</h3>{% include "parciales/campos.html" with form=extra.form %}</div>{% endfor %}
+  </div>
+  <div class="card-f"><a class="btn" href="{{ volver }}">Cancelar</a><button class="btn primary" type="submit">{% icono 'save' %} Guardar</button></div>
+</form>
+{% endblock %}

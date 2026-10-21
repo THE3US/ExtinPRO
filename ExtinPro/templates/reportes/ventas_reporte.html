@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load spvci %}
+{% block title %}ExtinPro_ReporteVentas_{{ desde|iso }}_{{ hasta|iso }}{% endblock %}
+{% block body %}
+<div class="print-page">
+  <div class="doc-actions no-print"><a class="btn" href="{% url 'reportes:ventas' %}?{{ request.GET.urlencode }}">Cerrar</a><button class="btn navy" type="button" onclick="window.print()">{% icono 'download' %} Exportar PDF</button></div>
+  <div class="doc grid" style="gap:16px">
+    {% include "parciales/doc_head.html" with titulo="REPORTE DE VENTAS" folio="SPVCI-04 / PD-03" %}
+    <div class="doc-meta"><div><span>Desde</span><b>{{ desde|fecha }}</b></div><div><span>Hasta</span><b>{{ hasta|fecha }}</b></div><div><span>Almacén</span><b>{{ nombre_alm }}</b></div></div>
+    {% if error %}<div class="alert crit">{{ error }}</div>{% else %}{% include "reportes/_ventas_cuerpo.html" %}{% endif %}
+    <div class="doc-foot"><span>Generado {{ generado|fecha_hora }} por {{ user.nombre_completo }}. Excluye ventas canceladas.</span><span>SPVCI · ExtinPro</span></div>
+  </div>
+</div>
+{% endblock %}

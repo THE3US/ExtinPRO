@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static spvci %}
+{% block body %}
+<div class="shell">
+  <aside class="side" aria-label="Menú principal">
+    <a class="brand-plate" href="{% url 'core:inicio' %}" style="text-decoration:none"><img src="{% static 'img/isotipo-extinpro.jpg' %}" alt="Isotipo ExtinPro"><div><b>Extin<span>Pro</span></b><small>Punto de venta · SPVCI</small></div></a>
+    <nav class="nav">
+      {% for g in nav %}
+        <div class="grp">{{ g.grupo }}</div>
+        {% for it in g.items %}
+          <a href="{{ it.url }}" class="{% if it.activo %}on{% endif %}"{% if it.activo %} aria-current="page"{% endif %}>{% icono it.icono %}<span>{{ it.texto }}</span>{% if it.seccion == "abastecimiento" and alertas %}<span class="cnt" title="Productos en o bajo el mínimo">{{ alertas|length }}</span>{% endif %}</a>
+        {% endfor %}
+      {% endfor %}
+    </nav>
+    <div class="side-foot">
+      <div class="me"><span class="avatar">{{ user.iniciales }}</span><div><b>{{ user.nombre_completo }}</b><small>{{ user.rol.nombre }} · {{ user.nombre_usuario }}</small></div></div>
+      <a href="{% url 'sitio:inicio' %}">{% icono 'globe' %}<span>Ver sitio web</span></a>
+      <form method="post" action="{% url 'usuarios:salir' %}">{% csrf_token %}<button type="submit" class="link-btn">{% icono 'logout' %}<span>Cerrar sesión</span></button></form>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="top">
+      <div class="top-l"><div class="row" style="gap:8px"><span class="stripes" aria-hidden="true"><i></i><i></i><i></i></span><span class="eyebrow">{% block subtitulo %}{{ subtitulo_seccion }}{% endblock %}</span></div><h1>{% block titulo %}{{ titulo_seccion }}{% endblock %}</h1></div>
+      <div class="top-r">
+        <span class="demo-badge">{{ hoy|fecha }}</span>
+        {% if sucursales_usuario|length > 1 %}
+          <form method="post" action="{% url 'usuarios:cambiar_sucursal' %}">{% csrf_token %}
+            <input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+            <label class="sr-only" for="almSel">Almacén activo</label>
+            <select class="sel" id="almSel" name="sucursal" data-autoenviar style="width:auto;min-height:38px">
+              {% for s in sucursales_usuario %}<option value="{{ s.pk }}" {% if s.pk == sucursal_activa.pk %}selected{% endif %}>{{ s.nombre }}</option>{% endfor %}
+            </select>
+          </form>
+        {% else %}
+          <span class="tag">{{ sucursal_activa.nombre }}</span>
+        {% endif %}
+        <button type="button" class="btn icon ghost bell" data-abrir="modal-alertas" aria-label="Alertas de stock mínimo ({{ alertas|length }})">{% icono 'bell' %}{% if alertas %}<span class="dot">{{ alertas|length }}</span>{% endif %}</button>
+      </div>
+    </header>
+    <div class="content" id="content">{% block content %}{% endblock %}</div>
+  </main>
+</div>
+
+<div class="overlay" id="modal-alertas" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-label="Alertas">
+    <div class="modal-h"><div><h2>Alertas de stock mínimo</h2><div class="hint" style="margin-top:2px">PROD-05 · se generan al quedar la existencia en o por debajo del mínimo</div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+    <div class="modal-b" style="padding:0"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Producto</th><th>Almacén</th><th class="r">Existencia</th><th class="r">Mínimo</th><th>Estado</th></tr></thead><tbody>
+      {% for a in alertas %}<tr><td>{% celda_producto a.producto %}</td><td>{{ a.sucursal.nombre }}</td><td class="r num"><b class="qty-low">{{ a.existencia|cantidad }}</b></td><td class="r num">{{ a.producto.stock_minimo|cantidad }}</td><td>{% pill a.estado.0 a.estado.1 %}</td></tr>
+      {% empty %}<tr><td colspan="5"><div class="empty">Sin alertas: todos los productos están arriba de su mínimo.</div></td></tr>{% endfor %}
+    </tbody></table></div></div>
+    <div class="modal-f"><button class="btn" data-cerrar>Cerrar</button>{% if "abastecimiento" in modulos %}<a class="btn primary" href="{% url 'compras:abastecimiento' %}">{% icono 'clip' %} Generar solicitud de abastecimiento</a>{% endif %}</div>
+  </div>
+</div>
+{% block modales %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<section class="card"><div class="card-h"><div><h2>Clientes</h2><div class="hint">CLIENTE · el registro «Público general» se usa en ventas de mostrador</div></div><a class="btn primary" href="{% url 'catalogo:cliente_nuevo' %}">{% icono 'plus' %} Nuevo cliente</a></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre o razón social</th><th>Tipo</th><th>RFC</th><th>Contacto</th><th class="r">Descuento</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for c in clientes %}<tr><td><b>{{ c.nombre_razon_social }}</b></td><td>{{ c.get_tipo_persona_display }}</td><td class="mono">{{ c.rfc|default:"—" }}</td><td>{{ c.correo|default:"" }}{% if c.telefono %}<div class="hint">{{ c.telefono }}</div>{% endif %}</td><td class="r num">{{ c.descuento_pct|cantidad }} %</td><td>{% if c.activo %}{% pill "ok" "Activo" %}{% else %}{% pill "off" "Inactivo" %}{% endif %}</td><td class="r"><a class="btn sm" href="{% url 'catalogo:cliente_editar' c.pk %}">Editar</a></td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="card"><div class="card-h"><div><h2>Proveedores</h2><div class="hint">PROVEEDOR · se eligen en abastecimiento y recibo de mercancía</div></div><a class="btn primary" href="{% url 'catalogo:proveedor_nuevo' %}">{% icono 'plus' %} Nuevo proveedor</a></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre o razón social</th><th>RFC</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for p in proveedores %}<tr><td><b>{{ p.nombre_razon_social }}</b></td><td class="mono">{{ p.rfc|default:"—" }}</td><td>{{ p.correo|default:"—" }}</td><td>{{ p.telefono|default:"—" }}</td><td>{% if p.activo %}{% pill "ok" "Activo" %}{% else %}{% pill "off" "Inactivo" %}{% endif %}</td><td class="r"><a class="btn sm" href="{% url 'catalogo:proveedor_editar' p.pk %}">Editar</a></td></tr>
+{% empty %}<tr><td colspan="6"><div class="empty">Sin proveedores.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<div class="steps" aria-label="Avance de la recepción">
+  <span class="step {% if rec %}done{% else %}cur{% endif %}"><span class="n">1</span>Captura</span>
+  <span class="step {% if rec.estado == 'APLICADA' %}done{% elif rec.estado == 'BORRADOR' %}cur{% endif %}"><span class="n">2</span>Validación contra la OC</span>
+  <span class="step {% if rec.estado == 'APLICADA' %}done{% endif %}"><span class="n">3</span>Recepción confirmada y stock actualizado</span>
+</div>
+<form method="post" action="{% url 'compras:recepcion_guardar' %}" id="recForm" novalidate data-iva="{{ iva_pct }}" data-bloqueada="{% if bloqueada %}1{% endif %}">
+  {% csrf_token %}
+  {% if rec %}<input type="hidden" name="recepcion" value="{{ rec.pk }}">{% endif %}
+  <div class="split">
+    <div class="grid" style="gap:20px">
+      <section class="card" aria-labelledby="recDatos">
+        <div class="card-h"><h2 id="recDatos">Datos de la recepción</h2>{% if not rec %}{% pill "off" "Nueva captura" %}{% elif rec.estado == "APLICADA" %}{% pill "ok" "Aplicada" %}{% elif rec.estado == "CANCELADA" %}{% pill "crit" "Cancelada" %}{% else %}{% pill "off" "Borrador" %}{% endif %}</div>
+        <div class="card-b grid g3">
+          <div class="field"><label for="rcFolio">Número de recepción</label><input class="inp mono" id="rcFolio" value="{% if rec %}{{ rec.folio_recepcion }}{% else %}Se asigna al guardar{% endif %}" readonly></div>
+          <div class="field"><label for="rcFecha">Fecha <span class="req">*</span></label><input class="inp" type="date" id="rcFecha" name="fecha" value="{{ datos.fecha|iso }}" max="{{ hoy|iso }}" {% if bloqueada %}disabled{% endif %}></div>
+          <div class="field"><label for="rcDoc">Factura o remisión del proveedor</label><input class="inp" id="rcDoc" name="documento" value="{{ datos.documento }}" placeholder="Ej. FAC-4387" maxlength="60" {% if bloqueada %}disabled{% endif %}></div>
+          <div class="field"><label for="rcProv">Proveedor <span class="req">*</span></label><select class="sel" id="rcProv" name="proveedor" {% if bloqueada or rec %}disabled{% endif %}><option value="">Selecciona…</option>{% for p in proveedores %}<option value="{{ p.pk }}" {% if p.pk|stringformat:"s" == datos.proveedor|stringformat:"s" %}selected{% endif %}>{{ p.nombre_razon_social }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="rcOC">Número de orden de compra <span class="req">*</span></label><select class="sel mono" id="rcOC" name="orden" {% if bloqueada or rec %}disabled{% endif %}><option value="">{% if ordenes %}Selecciona…{% else %}Sin órdenes pendientes{% endif %}</option>{% for o in ordenes %}<option value="{{ o.pk }}" data-prov="{{ o.proveedor_id }}" {% if orden and o.pk == orden.pk %}selected{% endif %}>{{ o.folio }} · {% if o.estado == "PARCIAL" %}parcial{% elif o.estado == "AUTORIZADA" %}por recibir{% else %}{{ o.get_estado_display|lower }}{% endif %}</option>{% endfor %}</select>{% if rec %}<input type="hidden" name="orden" value="{{ orden.pk }}">{% endif %}</div>
+          <div class="field"><label for="rcAlm">Almacén de destino</label><input class="inp" id="rcAlm" value="{{ orden.sucursal.nombre|default:'—' }}" readonly title="El almacén de destino es el de la orden de compra"></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="recProds">
+        <div class="card-h"><div><h2 id="recProds">Productos recibidos</h2><div class="hint">Captura lo que llegó físicamente; el sistema lo compara contra lo pendiente en la orden.</div></div>
+          <button type="button" class="btn" data-abrir="modal-agregar" {% if bloqueada or not orden %}disabled{% endif %}>{% icono 'plus' %} Agregar producto</button></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Producto · validación</th><th class="r">Pendiente</th><th class="r" style="width:110px">Recibido</th><th class="r" style="width:120px">Costo unitario</th><th class="r">Importe</th><th></th></tr></thead>
+        <tbody id="recLineas">
+          {% for l in lineas %}<tr data-linea data-sku="{{ l.producto.sku }}" data-nombre="{{ l.producto.nombre }}" data-unidad="{% if l.producto.tipo == 'EXTINTOR' %}pzas{% else %}u.{% endif %}" data-pend="{{ l.pendiente }}" data-enoc="{% if l.en_oc %}1{% endif %}">
+            <td><div class="grid" style="gap:6px">{% celda_producto l.producto %}<div data-val>{% if not l.en_oc %}{% pill "crit" "No está en la OC" %}{% endif %}</div></div><input type="hidden" name="detalle_orden" value="{{ l.detalle_orden_id|default:'' }}"><input type="hidden" name="producto" value="{{ l.producto.pk }}"></td>
+            <td class="r num">{% if l.en_oc %}{{ l.pendiente|cantidad }}{% else %}—{% endif %}</td>
+            <td class="r"><label class="sr-only" for="rq{{ forloop.counter }}">Cantidad recibida de {{ l.producto.nombre }}</label><input class="inp num" style="text-align:right;min-height:36px" type="number" min="0" step="any" id="rq{{ forloop.counter }}" name="cantidad" value="{{ l.cantidad|cantidad|cut:',' }}" data-q {% if bloqueada %}disabled{% endif %}></td>
+            <td class="r"><label class="sr-only" for="rc{{ forloop.counter }}">Costo unitario</label><input class="inp num" style="text-align:right;min-height:36px" type="number" min="0" step="0.01" id="rc{{ forloop.counter }}" name="costo" value="{{ l.costo }}" data-c {% if bloqueada %}disabled{% endif %}></td>
+            <td class="r num" data-imp style="white-space:nowrap"></td>
+            <td class="r">{% if not bloqueada %}<button type="button" class="btn icon ghost" data-quitar aria-label="Quitar {{ l.producto.nombre }}">{% icono 'trash' %}</button>{% endif %}</td></tr>
+          {% endfor %}
+          <tr id="recVacio" {% if lineas %}hidden{% endif %}><td colspan="6"><div class="empty">Selecciona una orden de compra para cargar sus partidas, o usa “Agregar producto”.</div></td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section class="card"><div class="card-b grid">
+        <div class="field"><label for="rcObs">Observaciones</label><textarea class="txt" id="rcObs" name="observaciones" placeholder="Anomalías, faltantes o daños (p. ej., extintor con manómetro dañado)" {% if bloqueada %}disabled{% endif %}>{{ datos.observaciones }}</textarea><span class="hint">Obligatorio si la recepción es parcial.</span></div>
+        <div id="recErr">{% if errores %}<div class="alert crit">{% icono 'alert' %}<div><b>No se puede registrar la recepción:</b><br>{% for e in errores %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div></div>{% endif %}</div>
+      </div></section>
+    </div>
+
+    <aside class="sticky"><div class="card">
+      <div class="card-h"><div><h2>Reporte de productos recibidos</h2><div class="hint">{% if orden %}{{ orden.folio }} · {{ orden.proveedor.nombre_razon_social }}{% else %}Sin orden seleccionada{% endif %}</div></div></div>
+      <div class="card-b grid" style="gap:14px">
+        <div class="sum-list" id="sumProds"></div>
+        <div class="sum-list">
+          <div class="sum-row"><span>Total de unidades recibidas</span><b id="sumUnid">{{ totales.unidades|cantidad }}</b></div>
+          <div class="sum-row"><span>Subtotal a costo</span><b id="sumSub">{{ totales.subtotal|dinero }}</b></div>
+          <div class="sum-row"><span>IVA {{ iva_pct }} %</span><b id="sumIva">{{ totales.iva|dinero }}</b></div>
+        </div>
+        <div class="sum-total"><span>Importe total</span><b id="sumTot">{{ totales.total|dinero }}</b></div>
+        <div class="statebox">
+          <div class="kv"><span>Estado</span><b>{% if rec %}{{ rec.get_estado_display }}{% else %}Nueva captura{% endif %}</b></div>
+          <div class="kv"><span>Tipo de recepción</span><b id="sumTipo">—</b></div>
+          <div class="kv"><span>Confirmación</span><b>{% if rec.estado == "APLICADA" %}✓ Confirmada por {{ rec.recibido_por.nombre_completo }}{% elif rec.estado == "CANCELADA" %}Cancelada{% else %}Pendiente{% endif %}</b></div>
+          <div class="kv"><span>Fecha de confirmación</span><b>{{ confirmado|fecha_hora }}</b></div>
+          {% if orden %}<div class="kv"><span>Estado de la OC</span><b>{{ orden.get_estado_display }}</b></div>{% endif %}
+        </div>
+        <div class="act-stack">
+          {% if bloqueada %}
+            <a class="btn navy" href="{% url 'compras:comprobante_recepcion' rec.pk %}" target="_blank">{% icono 'print' %} Imprimir comprobante</a>
+            <a class="btn" href="{% url 'compras:recepcion' %}">{% icono 'plus' %} Nueva recepción</a>
+            {% if rec.estado == "APLICADA" %}<button type="button" class="btn danger-text" data-abrir="modal-cancelar">{% icono 'x' %} Cancelar recepción</button>{% endif %}
+          {% else %}
+            <button class="btn primary" type="submit" name="accion" value="registrar" style="min-height:46px" id="btnRegistrar" data-confirmar="" data-confirmar-titulo="Confirmar recepción" data-confirmar-ok="Confirmar recepción" data-confirmar-peligro="no">{% icono 'check' %} Registrar recepción</button>
+            <button class="btn" type="submit" name="accion" value="borrador">{% icono 'save' %} Guardar borrador</button>
+            {% if rec %}<a class="btn" href="{% url 'compras:comprobante_recepcion' rec.pk %}" target="_blank">{% icono 'print' %} Imprimir comprobante</a>{% endif %}
+            <button class="btn danger-text" type="submit" name="accion" value="descartar" data-confirmar="Se descartarán los datos capturados{% if rec %} en <b>{{ rec.folio_recepcion }}</b>{% endif %}. Esta acción no afecta el inventario." data-confirmar-titulo="Descartar captura" data-confirmar-ok="Descartar">{% icono 'x' %} Cancelar</button>
+          {% endif %}
+        </div>
+      </div></div></aside>
+  </div>
+</form>
+
+<section class="card"><div class="card-h"><h2>Recepciones recientes</h2><span class="hint">{{ total_recepciones }} registradas</span></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Orden</th><th>Almacén</th><th class="r">Unidades</th><th class="r">Importe</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for r in recientes %}<tr><td class="mono">{{ r.folio_recepcion }}</td><td>{{ r.fecha_recepcion|fecha }}</td><td>{{ r.orden_compra.proveedor.nombre_razon_social }}</td><td class="mono">{{ r.orden_compra.folio }}</td><td>{{ r.orden_compra.sucursal.corto }}</td><td class="r num">{{ r.totales.unidades|cantidad }}</td><td class="r num">{{ r.totales.total|dinero }}</td>
+<td>{% if r.estado == "APLICADA" %}{% pill "ok" "Aplicada" %}{% elif r.estado == "CANCELADA" %}{% pill "crit" "Cancelada" %}{% else %}{% pill "off" "Borrador" %}{% endif %}</td>
+<td class="r">{% if r.estado == "BORRADOR" %}<a class="btn sm" href="{% url 'compras:recepcion' %}?r={{ r.pk }}">Continuar</a>{% else %}<a class="btn sm ghost" href="{% url 'compras:comprobante_recepcion' r.pk %}" target="_blank">{% icono 'file' %} Comprobante</a>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="9"><div class="empty">Aún no hay recepciones.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}
+
+{% block modales %}
+{% if not bloqueada and orden %}
+<div class="overlay" id="modal-agregar" hidden><div class="modal narrow" role="dialog" aria-modal="true" aria-label="Agregar producto">
+  <div class="modal-h"><div><h2>Agregar producto a la recepción</h2><div class="hint" style="margin-top:2px">Orden {{ orden.folio }}</div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b grid">
+    <div class="field"><label for="raP">Producto</label><select class="sel" id="raP">
+      <optgroup label="Pendientes en {{ orden.folio }}">{% for d, pend in partidas_oc %}{% if pend > 0 %}<option value="{{ d.producto_id }}" data-det="{{ d.pk }}" data-pend="{{ pend }}" data-costo="{{ d.costo_unitario }}" data-sku="{{ d.producto.sku }}" data-nombre="{{ d.producto.nombre }}" data-tipo="{{ d.producto.tipo }}">{{ d.producto.nombre }} · {{ d.producto.sku }}</option>{% endif %}{% endfor %}</optgroup>
+      <optgroup label="Otros productos del catálogo">{% for p in otros_productos %}<option value="{{ p.pk }}" data-det="" data-costo="{{ p.precio_compra }}" data-sku="{{ p.sku }}" data-nombre="{{ p.nombre }}" data-tipo="{{ p.tipo }}">{{ p.nombre }} · {{ p.sku }}</option>{% endfor %}</optgroup></select>
+      <span class="hint">Un producto que no está en la orden queda marcado y bloquea el registro hasta retirarlo.</span></div>
+    <div class="grid g2"><div class="field"><label for="raQ">Cantidad recibida</label><input class="inp" id="raQ" type="number" min="1" value="1"></div>
+    <div class="field"><label for="raC">Costo unitario</label><input class="inp" id="raC" type="number" min="0" step="0.01"></div></div>
+  </div>
+  <div class="modal-f"><button class="btn" data-cerrar>Cancelar</button><button type="button" class="btn navy" id="raOk">{% icono 'plus' %} Agregar</button></div>
+</div></div>
+{% endif %}
+{% if rec.estado == "APLICADA" %}
+<div class="overlay" id="modal-cancelar" hidden><div class="modal narrow" role="dialog" aria-modal="true" aria-label="Cancelar recepción">
+  <form method="post" action="{% url 'compras:recepcion_guardar' %}">{% csrf_token %}<input type="hidden" name="recepcion" value="{{ rec.pk }}"><input type="hidden" name="accion" value="cancelar">
+  <div class="modal-h"><div><h2>Cancelar recepción {{ rec.folio_recepcion }}</h2><div class="hint" style="margin-top:2px">Se generará un movimiento de reversa en el kárdex</div></div><button type="button" class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b grid"><div class="alert warn">{% icono 'alert' %}<div>Se restarán las unidades recibidas del {{ orden.sucursal.nombre }} y la orden {{ orden.folio }} volverá a quedar pendiente.</div></div>
+    <div class="field"><label for="cMot">Motivo de la cancelación <span class="req">*</span></label><textarea class="txt" id="cMot" name="motivo" required minlength="5"></textarea></div></div>
+  <div class="modal-f"><button type="button" class="btn" data-cerrar>Volver</button><button class="btn primary" type="submit">Cancelar recepción</button></div>
+  </form>
+</div></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% load static %}<script src="{% static 'js/recepcion.js' %}"></script>{% endblock %}

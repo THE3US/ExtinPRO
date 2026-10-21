@@ -1,0 +1,13 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<section class="card"><div class="card-h"><div><h2>Sucursales (almacenes)</h2><div class="hint">SUCURSAL</div></div><a class="btn primary" href="{% url 'usuarios:sucursal_nueva' %}">{% icono 'plus' %} Nueva sucursal</a></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Dirección</th><th>Teléfono</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for s in sucursales %}<tr><td><b>{{ s.nombre }}</b></td><td>{{ s.direccion }}</td><td>{{ s.telefono|default:"—" }}</td><td>{% if s.activa %}{% pill "ok" "Activa" %}{% else %}{% pill "off" "Inactiva" %}{% endif %}</td><td class="r"><a class="btn sm" href="{% url 'usuarios:sucursal_editar' s.pk %}">Editar</a></td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="card"><div class="card-h"><div><h2>Cajas</h2><div class="hint">CAJA · cada venta se cobra en una sesión de caja</div></div><a class="btn primary" href="{% url 'usuarios:caja_nueva' %}">{% icono 'plus' %} Nueva caja</a></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Nombre</th><th>Sucursal</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for c in cajas %}<tr><td class="mono">{{ c.codigo }}</td><td>{{ c.nombre }}</td><td>{{ c.sucursal.nombre }}</td><td>{% if c.activa %}{% pill "ok" "Activa" %}{% else %}{% pill "off" "Inactiva" %}{% endif %}</td><td class="r"><a class="btn sm" href="{% url 'usuarios:caja_editar' c.pk %}">Editar</a></td></tr>
+{% empty %}<tr><td colspan="5"><div class="empty">Sin cajas. Crea al menos una por sucursal para poder vender.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

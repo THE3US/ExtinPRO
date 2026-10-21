@@ -1,0 +1,7 @@
+# Dependencias del sistema (todas gratuitas y de código abierto).
+Django==5.2.18                 # framework web (LTS, soporte hasta abril de 2028)
+psycopg[binary]==3.3.6         # controlador de PostgreSQL
+django-environ==0.14.0         # lee la configuración del archivo .env
+whitenoise==6.12.0             # sirve los archivos estáticos (CSS, JS, imágenes)
+openpyxl==3.1.5                # exportación a Excel del reporte de valor de inventario
+tzdata; sys_platform == "win32"  # zonas horarias en Windows (America/Mexico_City)

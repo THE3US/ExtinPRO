@@ -1,0 +1,23 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<div class="alert info">{% icono 'info' %}<div>Para vender necesitas una <b>sesión de caja</b> abierta en {{ sucursal_activa.nombre }} (SESION_CAJA). Cada venta y cada pago quedan ligados a la sesión, y al cerrar se hace el arqueo.</div></div>
+<div class="abas-sum">
+{% for c, abierta in cajas %}
+  <form method="post" action="{% url 'ventas:caja_abrir' %}" class="card">{% csrf_token %}<input type="hidden" name="caja" value="{{ c.pk }}">
+    <div class="card-h"><div><h2>{{ c.codigo }} · {{ c.nombre }}</h2><div class="hint">{{ c.sucursal.nombre }}</div></div>{% if abierta %}{% pill "ok" "Abierta" %}{% else %}{% pill "off" "Cerrada" %}{% endif %}</div>
+    <div class="card-b grid" style="gap:14px">
+      {% if abierta %}
+        <div class="statebox"><div class="kv"><span>Abierta por</span><b>{{ abierta.abierto_por.nombre_completo }}</b></div><div class="kv"><span>Desde</span><b>{{ abierta.fecha_apertura|fecha_hora }}</b></div><div class="kv"><span>Fondo inicial</span><b>{{ abierta.fondo_inicial|dinero }}</b></div></div>
+        <button class="btn primary" type="submit">{% icono 'cart' %} Vender en esta caja</button>
+      {% else %}
+        <div class="field"><label for="f{{ c.pk }}">Fondo inicial (efectivo)</label><input class="inp num" id="f{{ c.pk }}" name="fondo_inicial" type="number" min="0" step="0.01" value="0.00"></div>
+        <button class="btn primary" type="submit">{% icono 'cash' %} Abrir caja</button>
+      {% endif %}
+    </div>
+  </form>
+{% empty %}
+  <div class="card"><div class="card-b"><div class="empty"><b>{{ sucursal_activa.nombre }} no tiene cajas registradas.</b><br>Un Administrador puede darlas de alta en Administración → Sucursales y cajas.</div></div></div>
+{% endfor %}
+</div>
+{% endblock %}

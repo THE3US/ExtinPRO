@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static spvci %}
+{% block title %}Comprobante {{ rec.folio_recepcion }}{% endblock %}
+{% block body %}
+<div class="print-page">
+  <div class="doc-actions no-print"><a class="btn" href="{% url 'compras:recepcion' %}?r={{ rec.pk }}">Volver</a><button class="btn navy" type="button" onclick="window.print()">{% icono 'print' %} Imprimir</button></div>
+  <div class="doc" style="position:relative">
+    {% if rec.estado != "APLICADA" %}<div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none"><span style="font:800 54px var(--f-display);color:rgba(179,38,30,.10);transform:rotate(-18deg)">{% if rec.estado == "CANCELADA" %}CANCELADA{% else %}BORRADOR · SIN VALIDEZ{% endif %}</span></div>{% endif %}
+    {% include "parciales/doc_head.html" with titulo="COMPROBANTE DE RECEPCIÓN" folio=rec.folio_recepcion %}
+    <div style="text-align:right;margin-top:-6px">{% if rec.estado == "APLICADA" %}{% pill "ok" "Aplicada" %}{% elif rec.estado == "CANCELADA" %}{% pill "crit" "Cancelada" %}{% else %}{% pill "off" "Borrador" %}{% endif %}</div>
+    <div class="doc-meta">
+      <div><span>Fecha de recepción</span><b>{{ rec.fecha_recepcion|fecha }}</b></div>
+      <div><span>Proveedor</span><b>{{ rec.orden_compra.proveedor.nombre_razon_social }}</b></div>
+      <div><span>RFC proveedor</span><b class="mono">{{ rec.orden_compra.proveedor.rfc|default:"—" }}</b></div>
+      <div><span>Orden de compra</span><b class="mono">{{ rec.orden_compra.folio }}</b></div>
+      <div><span>Almacén de destino</span><b>{{ rec.orden_compra.sucursal.nombre }}</b></div>
+      <div><span>Factura / remisión</span><b>{{ rec.documento_proveedor|default:"—" }}</b></div>
+    </div>
+    <table class="tbl" style="margin-top:12px"><thead><tr><th>Código</th><th>Producto</th><th class="r">Pendiente</th><th class="r">Recibido</th><th class="r">Costo unit.</th><th class="r">Importe</th></tr></thead><tbody>
+    {% for l in lineas %}<tr><td class="mono">{{ l.producto.sku }}</td><td>{{ l.producto.nombre }}</td><td class="r num">{{ l.pendiente|cantidad }}</td><td class="r num"><b>{{ l.cantidad|cantidad }}</b></td><td class="r num">{{ l.costo|dinero }}</td><td class="r num">{{ l.importe|dinero }}</td></tr>{% endfor %}
+    </tbody><tfoot><tr><td colspan="3">Total de unidades</td><td class="r num">{{ t.unidades|cantidad }}</td><td class="r">Subtotal</td><td class="r num">{{ t.subtotal|dinero }}</td></tr>
+    <tr><td colspan="5" class="r">IVA 16 %</td><td class="r num">{{ t.iva|dinero }}</td></tr><tr><td colspan="5" class="r">Importe total</td><td class="r num">{{ t.total|dinero }}</td></tr></tfoot></table>
+    <div style="margin-top:12px;font-size:13px"><b>Observaciones:</b> {{ rec.observaciones|default:"Sin observaciones." }}</div>
+    <div class="doc-foot"><div><div class="sign">Recibió: {{ rec.recibido_por.nombre_completo }}</div></div><div><div class="sign">Entregó (proveedor)</div></div>
+      <div style="align-self:flex-end;text-align:right">Confirmación: {% if confirmado %}{{ confirmado|fecha_hora }}{% else %}pendiente{% endif %}<br>Tipo: {% if parcial %}parcial{% else %}completa{% endif %} · Generado por SPVCI</div></div>
+  </div>
+</div>
+{% endblock %}

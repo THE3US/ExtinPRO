@@ -1,0 +1,20 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<div class="split" style="grid-template-columns:minmax(0,1fr) 360px">
+<section class="card"><div class="card-h"><div><h2>Conteos de inventario físico</h2><div class="hint">INVENTARIO_FISICO · cada diferencia autorizada genera un movimiento AJUSTE en el kárdex</div></div></div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Folio</th><th>Almacén</th><th>Inicio</th><th>Elaboró</th><th>Autorizó</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for c in conteos %}<tr><td class="mono">{{ c.folio }}</td><td>{{ c.sucursal.nombre }}</td><td>{{ c.fecha_inicio|fecha_hora }}</td><td>{{ c.creado_por.nombre_completo }}</td><td>{{ c.autorizado_por.nombre_completo|default:"—" }}</td>
+<td>{% if c.estado == 'AJUSTADO' %}{% pill "ok" "Ajustado" %}{% elif c.estado == 'CERRADO' %}{% pill "warn" "Por autorizar" %}{% else %}{% pill "info" "Abierto" %}{% endif %}</td>
+<td class="r"><a class="btn sm" href="{% url 'inventario:conteo' c.pk %}">{% if c.estado == 'ABIERTO' %}Continuar{% else %}Ver{% endif %}</a></td></tr>
+{% empty %}<tr><td colspan="7"><div class="empty">Aún no hay conteos. Para cargar las existencias iniciales de un almacén, inicia un conteo y captura lo que hay físicamente.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+<aside class="sticky"><div class="card"><div class="card-h"><h2>Nuevo conteo</h2></div>
+<form method="post" class="card-b grid" style="gap:14px">{% csrf_token %}
+  <div class="statebox"><div class="kv"><span>Almacén</span><b>{{ sucursal_activa.nombre }}</b></div><div class="kv"><span>Productos</span><b>Todos los activos (sin servicios)</b></div></div>
+  <div class="field"><label for="obs">Observaciones</label><textarea class="txt" id="obs" name="observaciones" placeholder="Ej. Conteo mensual de octubre o carga inicial"></textarea></div>
+  <button class="btn primary" type="submit">{% icono 'plus' %} Iniciar conteo</button>
+  <p class="hint">El sistema guarda la existencia actual como «existencia en sistema»; tú capturas la física. El Gerente autoriza los ajustes.</p>
+</form></div></aside>
+</div>
+{% endblock %}

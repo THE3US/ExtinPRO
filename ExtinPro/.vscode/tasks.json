@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Migrar base de datos", "type": "shell", "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe manage.py migrate", "problemMatcher": [] },
+    { "label": "Cargar datos de ejemplo (E7)", "type": "shell", "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe manage.py cargar_demo", "problemMatcher": [] },
+    { "label": "Correr pruebas", "type": "shell", "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe manage.py test pruebas --noinput", "group": "test", "problemMatcher": [] },
+    { "label": "Iniciar servidor", "type": "shell", "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe manage.py runserver", "isBackground": true, "problemMatcher": [] }
+  ]
+}

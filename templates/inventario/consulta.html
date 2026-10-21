@@ -1,0 +1,36 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<div class="kpis">
+  <div class="card kpi"><div class="ico">{% icono 'box' %}</div><div><div class="lab">Productos en catálogo</div><div class="val">{{ n_activos }}</div><div class="sub">{{ n_descontinuados }} descontinuado{{ n_descontinuados|pluralize }} · {{ n_servicios }} servicios aparte</div></div></div>
+  <div class="card kpi"><div class="ico ok">{% icono 'check' %}</div><div><div class="lab">Unidades en existencia</div><div class="val">{{ unidades|cantidad }}</div><div class="sub">{% for s, u in unidades_por_sucursal %}{{ s.corto }} {{ u|cantidad }}{% if not forloop.last %} · {% endif %}{% endfor %}</div></div></div>
+  <div class="card kpi"><div class="ico warn">{% icono 'alert' %}</div><div><div class="lab">Bajo mínimo</div><div class="val">{{ n_bajo }}</div><div class="sub">Existencia ≤ stock mínimo</div></div></div>
+  <div class="card kpi"><div class="ico red">{% icono 'x' %}</div><div><div class="lab">Agotados</div><div class="val">{{ n_agotados }}</div><div class="sub">Sin existencia en el almacén</div></div></div>
+</div>
+<section class="card">
+  <form class="toolbar" method="get">
+    <div class="field wide"><label for="ivQ">Buscar</label><div class="inp-icon">{% icono 'barcode' %}<input class="inp" id="ivQ" name="q" value="{{ f.q }}" placeholder="Código de barras, SKU, ID o nombre" autofocus></div></div>
+    <button class="btn navy" type="submit">{% icono 'search' %} Buscar</button>
+    <div class="field"><label for="ivC">Categoría</label><select class="sel" id="ivC" name="cat"><option value="">Todas</option>{% for c in categorias %}<option {% if f.cat == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="ivA">Almacén</label><select class="sel" id="ivA" name="alm"><option value="">Todos</option>{% for s in sucursales_filtro %}<option value="{{ s.pk }}" {% if f.alm == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nombre }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="ivE">Estado</label><select class="sel" id="ivE" name="est"><option value="">Todos</option>{% for e in estados %}<option {% if f.est == e %}selected{% endif %}>{{ e }}</option>{% endfor %}</select></div>
+    <button class="btn" type="submit">{% icono 'filter' %} Filtrar</button>
+    {% if filtros_activos %}<a class="btn ghost" href="{% url 'inventario:consulta' %}">Limpiar</a>{% endif %}
+  </form>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código de barras / ID</th><th>Nombre de producto</th><th>Categoría</th><th>Almacén</th><th class="r">Cantidad</th><th>Estado</th><th class="r">Acciones</th></tr></thead><tbody>
+  {% for x in pagina %}{% with p=x.producto %}<tr>
+    <td style="white-space:nowrap"><div class="mono" style="color:var(--ink)">{{ p.codigo_barras|default:"—" }}</div><div class="hint mono">ID {{ p.pk|stringformat:"04d" }}</div></td>
+    <td>{% with " · "|add:p.marca|default:" · Genérico" as extra %}{% celda_producto p extra %}{% endwith %}</td><td>{{ p.categoria }}</td><td style="white-space:nowrap">{{ x.sucursal.corto }}</td>
+    <td class="r num"><b class="{% if x.estado.0 != 'ok' %}qty-low{% endif %}" style="font-size:15px">{{ x.existencia|cantidad }}</b><div class="hint">mín. {{ p.stock_minimo|cantidad }}</div></td>
+    <td>{% pill x.estado.0 x.estado.1 %}</td>
+    <td class="r" style="white-space:nowrap"><a class="btn sm" href="{% url 'inventario:detalle' p.pk %}" data-fragmento>{% icono 'eye' %} Detalles</a> <a class="btn sm ghost" href="{% url 'inventario:historial' p.pk %}?sucursal={{ x.sucursal.pk }}" data-fragmento>{% icono 'history' %} Historial</a></td></tr>{% endwith %}
+  {% empty %}<tr><td colspan="7"><div class="empty"><b>Sin resultados.</b><br>No hay productos que coincidan con la búsqueda o los filtros. Prueba con otro código o limpia los filtros.</div></td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="pager"><span>Mostrando {% if total_filas %}{{ pagina.start_index }}–{{ pagina.end_index }}{% else %}0–0{% endif %} de {{ total_filas }} registros (producto × almacén)</span>
+    <div class="row" style="gap:6px">
+      {% if pagina.has_previous %}<a class="btn sm" href="{% query page=pagina.previous_page_number %}" aria-label="Página anterior">‹</a>{% else %}<button class="btn sm" disabled aria-label="Página anterior">‹</button>{% endif %}
+      {% for n in pagina.paginator.page_range %}<a class="btn sm {% if n == pagina.number %}navy{% endif %}" href="{% query page=n %}">{{ n }}</a>{% endfor %}
+      {% if pagina.has_next %}<a class="btn sm" href="{% query page=pagina.next_page_number %}" aria-label="Página siguiente">›</a>{% else %}<button class="btn sm" disabled aria-label="Página siguiente">›</button>{% endif %}
+    </div></div>
+</section>
+{% endblock %}

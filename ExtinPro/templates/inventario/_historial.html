@@ -1,0 +1,26 @@
+{% load spvci %}
+<div class="overlay" hidden><div class="modal wide" role="dialog" aria-modal="true" aria-label="Historial">
+  <div class="modal-h"><div><h2>Historial · {{ p.nombre }}</h2><div class="hint" style="margin-top:2px">{{ p.sku }} · {% if sucursal %}{{ sucursal.nombre }}{% else %}todos los almacenes{% endif %} · {{ total_movs }} movimientos</div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b grid" style="gap:14px">
+    <div class="chips" role="tablist">
+      <a class="chip {% if tab == 'm' %}on{% endif %}" href="{% url 'inventario:historial' p.pk %}?tab=m{% if sucursal %}&sucursal={{ sucursal.pk }}{% endif %}" data-fragmento>Movimientos (kárdex)</a>
+      <a class="chip {% if tab == 'c' %}on{% endif %}" href="{% url 'inventario:historial' p.pk %}?tab=c{% if sucursal %}&sucursal={{ sucursal.pk }}{% endif %}" data-fragmento>Cambios en el registro</a>
+    </div>
+    <div class="alert info">{% icono 'info' %}<div>{% if tab == 'm' %}Cada entrada, salida o ajuste queda en el kárdex con su referencia (recepción, venta o conteo físico) y el usuario responsable. Se muestran los 40 más recientes.{% else %}Auditoría de cambios en precios, mínimos y estado del producto.{% endif %}</div></div>
+    <div class="tbl-wrap">
+    {% if tab == 'm' %}
+      <table class="tbl"><thead><tr><th>Fecha</th><th>Tipo</th><th>Referencia</th><th>Almacén</th><th class="r">Cantidad</th><th class="r">Existencia</th><th>Usuario</th></tr></thead><tbody>
+      {% for m in movs %}<tr><td class="num" style="white-space:nowrap">{{ m.fecha_movimiento|fecha_hora }}</td>
+        <td>{% if m.tipo == 'ENTRADA_COMPRA' %}{% pill "ok" "Entrada por compra" %}{% elif m.tipo == 'SALIDA_VENTA' %}{% pill "info" "Salida por venta" %}{% elif m.tipo == 'AJUSTE' %}{% pill "warn" "Ajuste" %}{% elif m.tipo == 'REVERSA' %}{% pill "crit" "Reversa" %}{% else %}{% pill "off" m.get_tipo_display %}{% endif %}</td>
+        <td class="mono">{{ m.referencia }}{% if m.observaciones %}<div class="hint" style="font-family:var(--f-body)">{{ m.observaciones }}</div>{% endif %}</td><td>{{ m.sucursal.corto }}</td>
+        <td class="r num"><b class="{% if m.delta > 0 %}qty-ok{% else %}qty-low{% endif %}">{% if m.delta > 0 %}+{% endif %}{{ m.delta|cantidad }}</b></td><td class="r num">{{ m.existencia_despues|cantidad }}</td><td>{{ m.registrado_por.nombre_completo }}</td></tr>
+      {% empty %}<tr><td colspan="7"><div class="empty">Sin movimientos registrados.</div></td></tr>{% endfor %}</tbody></table>
+    {% else %}
+      <table class="tbl"><thead><tr><th>Fecha</th><th>Campo</th><th>Antes</th><th>Después</th><th>Usuario</th><th>Motivo</th></tr></thead><tbody>
+      {% for c in cambios %}<tr><td class="num" style="white-space:nowrap">{{ c.fecha|fecha_hora }}</td><td><b>{{ c.campo|default:c.accion }}</b></td><td>{{ c.valor_anterior|default:"—" }}</td><td>{{ c.valor_nuevo|default:"—" }}</td><td>{{ c.usuario.nombre_completo|default:"—" }}</td><td class="hint">{{ c.motivo|default:"" }}</td></tr>
+      {% empty %}<tr><td colspan="6"><div class="empty">Sin cambios registrados.</div></td></tr>{% endfor %}</tbody></table>
+    {% endif %}
+    </div>
+  </div>
+  <div class="modal-f"><button class="btn" data-cerrar>Cerrar</button></div>
+</div></div>

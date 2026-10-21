@@ -1,0 +1,12 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block content %}
+<section class="card"><form class="toolbar" method="get" novalidate>
+  <div class="field"><label for="rvD">Desde</label><input class="inp" type="date" id="rvD" name="desde" value="{{ desde|iso }}" max="{{ hoy|iso }}"></div>
+  <div class="field"><label for="rvH">Hasta</label><input class="inp" type="date" id="rvH" name="hasta" value="{{ hasta|iso }}" max="{{ hoy|iso }}"></div>
+  <div class="field"><label for="rvA">Almacén</label><select class="sel" id="rvA" name="alm"><option value="">Todos</option>{% for s in sucursales_usuario %}<option value="{{ s.pk }}" {% if alm == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nombre }}</option>{% endfor %}</select></div>
+  <button class="btn navy" type="submit">{% icono 'filter' %} Generar</button>
+  {% if not error %}<a class="btn" href="{% url 'reportes:ventas_imprimir' %}?{{ request.GET.urlencode }}" target="_blank">{% icono 'download' %} Exportar PDF</a>{% endif %}
+</form></section>
+{% if error %}<div class="alert crit">{% icono 'alert' %}<div>{{ error }}</div></div>{% else %}{% include "reportes/_ventas_cuerpo.html" %}{% endif %}
+{% endblock %}

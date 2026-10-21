@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load static spvci %}
+{% block title %}ExtinPro · Protección contra incendios en Aguascalientes{% endblock %}
+{% block body %}
+<div class="site">
+  <header class="s-head"><div class="wrap">
+    <a class="s-logo" href="{% url 'sitio:inicio' %}" aria-label="ExtinPro, inicio"><img src="{% static 'img/isotipo-extinpro.jpg' %}" alt=""><div><b>Extin<span>Pro</span></b><small>Tu seguridad, nuestra prioridad</small></div></a>
+    <nav class="s-nav" aria-label="Secciones del sitio">
+      <a href="#servicios">Servicios</a>
+      <a href="#productos">Productos</a>
+      <a href="#proceso">Cómo trabajamos</a>
+      <a href="#preguntas">Preguntas</a>
+      <a class="btn ghost" href="{% url 'usuarios:acceso' %}">{% icono 'lock' %} Colaboradores</a>
+      <a class="btn primary" href="#contacto">Solicitar cotización</a>
+    </nav>
+  </div></header>
+
+  <section class="hero"><div class="wrap">
+    <div>
+      <span class="eyebrow">{{ SPVCI.CIUDAD }}</span>
+      <h1 style="margin-top:12px">Protección contra incendios <span>con confianza.</span></h1>
+      <p class="lead">Venta, recarga y mantenimiento de extintores para hogares, comercios, empresas e instituciones. Te orientamos para elegir el equipo adecuado para tu espacio.</p>
+      <div class="cta"><a class="btn primary" href="#contacto">Solicitar cotización {% icono 'arrow' %}</a><a class="btn" href="#servicios">Ver servicios</a></div>
+      <div class="hero-facts"><div>{% icono 'check' %} Orientación para elegir</div><div>{% icono 'check' %} Servicios explicados con claridad</div><div>{% icono 'check' %} Seguimiento y condiciones transparentes</div></div>
+    </div>
+    <div class="hero-art">
+      <div class="hero-diag" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="hero-card">
+        <div class="spread"><span class="tag">Ficha de producto</span><span class="hint">Ejemplo</span></div>
+        <div style="display:grid;place-items:center;padding:14px 0 6px"><svg viewBox="0 0 48 64" width="128" height="170" aria-hidden="true"><rect x="19" y="5" width="10" height="7" rx="1.5" fill="#0B2F61"/><path d="M24 7 L34 3" stroke="#0B2F61" stroke-width="2.4" stroke-linecap="round"/><path d="M30 14 C38 14 40 20 40 30" stroke="#252A30" stroke-width="2.4" fill="none" stroke-linecap="round"/><rect x="13" y="12" width="22" height="49" rx="8" fill="#E30613"/><rect x="13" y="26" width="22" height="15" fill="#fff"/><text x="24" y="37" text-anchor="middle" font-family="Montserrat,Arial" font-weight="800" font-size="8.5" fill="#0B2F61">PQS</text><rect x="16" y="15" width="3" height="40" rx="1.5" fill="#fff" opacity=".25"/></svg></div>
+        <h3 style="font-size:19px">Extintor PQS 6 kg</h3>
+        <p class="muted" style="font-size:14px;margin-top:4px">Polvo químico seco ABC, para fuegos clase A, B y C.</p>
+        <div class="lab"><span class="hint">Recarga sugerida</span><b>cada 12 meses</b></div>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="sec" id="servicios"><div class="wrap">
+    <div class="sec-h"><span class="eyebrow">Servicios</span><h2 style="margin-top:8px">Lo que hacemos por tu espacio</h2><p>Cada servicio se describe con su alcance real. La cobertura y las condiciones se confirman por escrito en tu cotización.</p></div>
+    <div class="svc">{% for i, t, d in servicios %}<article><span class="si">{% icono i %}</span><h3>{{ t }}</h3><p>{{ d }}</p></article>{% endfor %}</div>
+  </div></section>
+
+  <section class="sec alt"><div class="wrap">
+    <div class="sec-h"><span class="eyebrow">Para quién</span><h2 style="margin-top:8px">Atención según el tipo de espacio</h2><p>Organizamos la atención por tipo de cliente para responder lo que cada uno necesita saber.</p></div>
+    <div class="aud">{% for t, n, o in audiencias %}<article><header>{{ t }}</header><div><b>Necesidad</b><span>{{ n }}</span><b style="margin-top:6px">Te ofrecemos</b><span>{{ o }}</span></div></article>{% endfor %}</div>
+  </div></section>
+
+  {% if productos %}
+  <section class="sec" id="productos"><div class="wrap">
+    <div class="sec-h"><span class="eyebrow">Productos</span><h2 style="margin-top:8px">Equipos de uso frecuente</h2><p>Precios de referencia más IVA. La existencia y el precio final se confirman en la cotización.</p></div>
+    <div class="cat">{% for p in productos %}<article><div class="art">{% arte_producto p 110 %}</div><span class="hint">{{ p.categoria }}</span><h3>{{ p.nombre }}</h3><div class="spread"><span class="pr">{{ p.precio_venta|dinero }}</span><small>+ IVA</small></div><button type="button" class="btn" data-cotizar="Me interesa cotizar: {{ p.nombre }} ({{ p.sku }}). Cantidad: ">Cotizar este equipo</button></article>{% endfor %}</div>
+  </div></section>
+  {% endif %}
+
+  <section class="sec alt" id="proceso"><div class="wrap">
+    <div class="sec-h"><span class="eyebrow">Cómo trabajamos</span><h2 style="margin-top:8px">Tres pasos para tu cotización</h2></div>
+    <ol class="proc" style="padding:0;margin:0">
+      <li><h3>Cuéntanos qué necesitas</h3><p>Tipo de espacio, equipos que ya tienes y si buscas equipo nuevo, recarga o mantenimiento.</p></li>
+      <li><h3>Revisamos tu solicitud</h3><p>Verificamos el tipo de equipo adecuado y, si hace falta, agendamos una visita.</p></li>
+      <li><h3>Te compartimos opciones</h3><p>Recibes una cotización con alcance, cantidades, precios, condiciones y siguiente paso.</p></li>
+    </ol>
+  </div></section>
+
+  <section class="sec" id="preguntas"><div class="wrap">
+    <div class="sec-h"><span class="eyebrow">Preguntas frecuentes</span><h2 style="margin-top:8px">Antes de cotizar</h2></div>
+    <div class="faq">
+      <details open><summary>¿Qué información necesitan para cotizar?</summary><p>El tipo de espacio (casa, comercio, oficina, bodega o industria), su tamaño aproximado, cuántos extintores tienes y si necesitas equipo nuevo, recarga o mantenimiento.</p></details>
+      <details><summary>¿Qué servicios ofrecen?</summary><p>Venta, recarga, mantenimiento, instalación, señalización y capacitación. El alcance de cada uno se confirma por escrito en tu cotización.</p></details>
+      <details><summary>¿Cómo se agenda una visita?</summary><p>Envía el formulario de esta página. Te contactamos para confirmar la fecha y el horario disponibles.</p></details>
+    </div>
+  </div></section>
+
+  <section class="sec alt" id="contacto"><div class="wrap">
+    <div class="sec-h"><span class="eyebrow">Contacto</span><h2 style="margin-top:8px">¿Qué necesita tu espacio?</h2><p>Escríbenos para aclarar tus necesidades y conocer los servicios disponibles.</p></div>
+    <div class="contact">
+      <div class="c-info">
+        <h3>ExtinPro</h3>
+        <div class="it">{% icono 'phone' %}<div><b>Teléfono y WhatsApp</b><span class="tbd">Por confirmar</span></div></div>
+        <div class="it">{% icono 'mail' %}<div><b>Correo</b><span class="tbd">Por confirmar</span></div></div>
+        <div class="it">{% icono 'pin' %}<div><b>Ubicación</b>{{ SPVCI.CIUDAD }} <span class="tbd">Dirección por confirmar</span></div></div>
+        <div class="it">{% icono 'clock' %}<div><b>Horario</b><span class="tbd">Por confirmar</span></div></div>
+        <p style="font-size:13px;color:#9FB2D0">Los datos de contacto se publican cuando la empresa los confirma. No se muestran datos provisionales.</p>
+      </div>
+      <div class="card"><div class="card-b">
+      {% if enviada %}
+        <div class="alert ok">{% icono 'check' %}<div><b>Recibimos tu solicitud (folio {{ enviada }}).</b><br>Te contactaremos para confirmar los detalles de tu cotización.</div></div>
+        <a class="btn" style="margin-top:14px" href="{% url 'sitio:inicio' %}#contacto">Enviar otra solicitud</a>
+      {% else %}
+        <form method="post" action="{% url 'sitio:cotizacion' %}" class="grid g2" novalidate>
+          {% csrf_token %}
+          <div class="field"><label for="wNom">Nombre <span class="req">*</span></label><input class="inp{% if errores and datos.nombre|length < 3 %} err{% endif %}" id="wNom" name="nombre" autocomplete="name" placeholder="Nombre y apellido" value="{{ datos.nombre }}"></div>
+          <div class="field"><label for="wCon">Teléfono o correo <span class="req">*</span></label><input class="inp" id="wCon" name="contacto" placeholder="10 dígitos o correo electrónico" value="{{ datos.contacto }}"></div>
+          <div class="field"><label for="wTipo">Tipo de espacio</label><select class="sel" id="wTipo" name="tipo_espacio">{% for t in tipos_espacio %}<option {% if datos.tipo_espacio == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="wSvc">Servicio de interés</label><select class="sel" id="wSvc" name="servicio">{% for i, t, d in servicios %}<option {% if datos.servicio == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+          <div class="field span2"><label for="wMsg">Mensaje</label><textarea class="txt" id="wMsg" name="mensaje" placeholder="Cuéntanos qué equipo tienes o qué necesitas">{{ datos.mensaje }}</textarea></div>
+          <label class="span2 row" style="gap:10px;font-size:14px"><input type="checkbox" id="wPriv" name="privacidad" {% if datos.privacidad %}checked{% endif %}> Acepto el <a href="#" data-abrir="modal-privacidad">aviso de privacidad</a> <span class="req" style="color:var(--red)">*</span></label>
+          <div class="span2" id="wErr">{% if errores %}<div class="alert crit">{% icono 'alert' %}<div>{% for e in errores %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div></div>{% endif %}</div>
+          <div class="span2 row"><button class="btn primary" type="submit">{% icono 'send' %} Enviar solicitud</button><span class="hint">Sólo pedimos los datos necesarios para responderte.</span></div>
+        </form>
+      {% endif %}
+      </div></div>
+    </div>
+  </div></section>
+
+  <footer class="s-foot"><div class="wrap">
+    <div><div class="row" style="gap:12px"><span style="background:#fff;border-radius:10px;padding:6px;display:inline-flex"><img src="{% static 'img/isotipo-extinpro.jpg' %}" alt="" width="40" height="40"></span><b style="font:800 20px var(--f-display);color:#fff">ExtinPro</b></div><p style="margin-top:12px;max-width:40ch">Venta de extintores y servicios de protección contra incendios en Aguascalientes.</p></div>
+    <div><h4>Servicios</h4>{% for i, t, d in servicios|slice:":5" %}<a href="#servicios">{{ t }}</a>{% endfor %}</div>
+    <div><h4>ExtinPro</h4><a href="#preguntas">Preguntas frecuentes</a><a href="#contacto">Contacto</a><a href="#" data-abrir="modal-privacidad">Aviso de privacidad</a><a href="{% url 'usuarios:acceso' %}">Acceso para colaboradores</a></div>
+    <div class="legal"><span>© {{ hoy.year }} ExtinPro · Tu seguridad, nuestra prioridad</span><span>Proyecto Integrador I, UPA</span></div>
+  </div></footer>
+</div>
+
+<div class="overlay" id="modal-privacidad" hidden><div class="modal narrow" role="dialog" aria-modal="true" aria-label="Aviso de privacidad">
+  <div class="modal-h"><div><h2>Aviso de privacidad</h2><div class="hint" style="margin-top:2px">Versión preliminar</div></div><button class="btn icon ghost" data-cerrar aria-label="Cerrar">{% icono 'x' %}</button></div>
+  <div class="modal-b"><p>ExtinPro utiliza los datos que envías (nombre y medio de contacto) únicamente para responder tu solicitud de cotización. El aviso de privacidad definitivo, con responsable, finalidades y medios para ejercer tus derechos ARCO, se publicará cuando la empresa lo confirme.</p></div>
+  <div class="modal-f"><button class="btn navy" data-cerrar>Entendido</button></div>
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-cotizar]");
+  if (!b) return;
+  document.getElementById("contacto").scrollIntoView({ behavior: "smooth" });
+  const m = document.getElementById("wMsg");
+  if (m) { m.value = b.dataset.cotizar; setTimeout(() => m.focus(), 400); }
+});
+</script>
+{% endblock %}

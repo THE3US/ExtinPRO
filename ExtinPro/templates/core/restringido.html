@@ -1,0 +1,12 @@
+{% extends "app.html" %}
+{% load spvci %}
+{% block titulo %}{{ modulo_nombre }}{% endblock %}
+{% block content %}
+<div class="card"><div class="card-b" style="display:flex;gap:16px;align-items:flex-start">
+  <div class="kpi" style="padding:0"><div class="ico red">{% icono 'lock' %}</div></div>
+  <div><h2 style="font-size:18px">Acceso restringido</h2>
+  <p class="muted" style="margin-top:6px">El rol <b>{{ user.rol.nombre }}</b> no tiene permiso para “{{ modulo_nombre }}”. Inicia sesión con un usuario de Gerente o Administrador.</p>
+  <div class="row" style="margin-top:14px"><a class="btn" href="{% url 'core:inicio' %}">Ir al inicio</a>
+    <form method="post" action="{% url 'usuarios:salir' %}">{% csrf_token %}<button class="btn navy" type="submit">Cambiar de usuario</button></form></div></div>
+</div></div>
+{% endblock %}
