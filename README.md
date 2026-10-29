@@ -1,12 +1,10 @@
 # ExtinPro · SPVCI
 
 Sistema de punto de venta, compras e inventario para ExtinPro (Aguascalientes).
-Está construido sobre el **diseño de base de datos del Entregable 6** y la **interfaz y casos de prueba del Entregable 7** (Demo v2).
 
 - **Backend:** Django 5.2 LTS (un solo proyecto, módulos por área).
 - **Base de datos:** PostgreSQL 16 (o 14 en adelante), todas las tablas en el esquema `extinpro`.
 - **Frontend:** plantillas de Django + HTML/CSS/JS sin frameworks; mismo estilo del prototipo.
-- **Costo:** $0. Todo es software libre y no hay servicios de pago.
 
 ---
 
